@@ -6,23 +6,23 @@ This project is a basic automation system for hydroponic cultivation using ESP32
 
 ## Table of Contents
 
-* [Main Features](https://www.google.com/search?q=%23main-features)
-* [Component List](https://www.google.com/search?q=%23component-list)
-* [Wiring Diagram](https://www.google.com/search?q=%23wiring-diagram)
-* [Software Preparation](https://www.google.com/search?q=%23software-preparation)
-    * [Arduino IDE](https://www.google.com/search?q=%23arduino-ide)
-    * [Home Assistant](https://www.google.com/search?q=%23home-assistant)
-* [Assembly & Wiring Instructions](https://www.google.com/search?q=%23assembly--wiring-instructions)
-    * [Power Supply](https://www.google.com/search?q=%23power-supply)
-    * [JSN-SR04T Ultrasonic Sensor](https://www.google.com/search?q=%23jsn-sr04t-ultrasonic-sensor)
-    * [DS18B20 Temperature Sensor](https://www.google.com/search?q=%23ds18b20-temperature-sensor)
-    * [DHT22 Temperature & Humidity Sensor](https://www.google.com/search?q=%23dht22-temperature--humidity-sensor)
-    * [Buzzer](https://www.google.com/search?q=%23buzzer)
-    * [Relay Module (MOSFET Replacement)](https://www.google.com/search?q=%23relay-module-mosfet-replacement)
-* [Usage](https://www.google.com/search?q=%23usage)
-* [Troubleshooting](https://www.google.com/search?q=%23troubleshooting)
-* [Contribution](https://www.google.com/search?q=%23contribution)
-* [License](https://www.google.com/search?q=%23license)
+* [Main Features]
+* [Component List]
+* [Wiring Diagram]
+* [Software Preparation]
+    * [Arduino IDE]
+    * [Home Assistant]
+* [Assembly & Wiring Instructions]
+    * [Power Supply]
+    * [JSN-SR04T Ultrasonic Sensor]
+    * [DS18B20 Temperature Sensor]
+    * [DHT22 Temperature & Humidity Sensor]
+    * [Buzzer]
+    * [Relay Module (MOSFET Replacement)]
+* [Usage]
+* [Troubleshooting]
+* [Contribution]
+* [License]
 
 ## Main Features
 

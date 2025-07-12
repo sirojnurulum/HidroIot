@@ -165,6 +165,7 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
             step: 1
             unit_of_measurement: "ml"
             icon: mdi:beaker-plus-outline
+            mode: box # Display as a text box instead of a slider
 
           pump_b_volume:
             name: Nutrient B Dosing Volume
@@ -174,6 +175,7 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
             step: 1
             unit_of_measurement: "ml"
             icon: mdi:beaker-plus-outline
+            mode: box # Display as a text box instead of a slider
         ```
 
     *   **b. Create `scripts` to trigger the pumps with the selected volume:**

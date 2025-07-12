@@ -165,6 +165,7 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
             step: 1
             unit_of_measurement: "ml"
             icon: mdi:beaker-plus-outline
+            mode: box # Tampilkan sebagai kotak teks, bukan slider
 
           pompa_b_volume:
             name: Volume Dosis Nutrisi B
@@ -174,6 +175,7 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
             step: 1
             unit_of_measurement: "ml"
             icon: mdi:beaker-plus-outline
+            mode: box # Tampilkan sebagai kotak teks, bukan slider
         ```
 
     *   **b. Buat `script` untuk memicu pompa dengan volume yang dipilih:**

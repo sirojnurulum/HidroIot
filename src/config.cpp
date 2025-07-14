@@ -4,7 +4,7 @@
 //                           WIFI CONFIGURATION
 // =======================================================================
 const char *WIFI_SSID = "Baceprot";
-const char *WIFI_PASSWORD = "ya.gak.tau.kok.tanya.saya";
+const char *WIFI_PASSWORD = "***";
 
 // =======================================================================
 //                           MQTT CONFIGURATION
@@ -12,7 +12,7 @@ const char *WIFI_PASSWORD = "ya.gak.tau.kok.tanya.saya";
 const char *MQTT_SERVER = "ha.o-m-b.id";
 const int MQTT_PORT = 1883;
 const char *MQTT_USERNAME = "Baceprot";
-const char *MQTT_PASSWORD = "Baceprot@IotHidro";
+const char *MQTT_PASSWORD = "***";
 const char *MQTT_CLIENT_ID = "esp32hidro"; // Harus unik untuk setiap perangkat di broker / Must be unique for each device on the broker
 
 // =======================================================================

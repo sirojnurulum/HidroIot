@@ -2,7 +2,10 @@
 #define MQTT_HANDLER_H
 
 #include <PubSubClient.h>
+
+#if HYDROPONIC_INSTANCE == 1
 #include "sensors.h" // For SensorValues struct
+#endif
 
 /**
  * @brief Menginisialisasi klien MQTT dan mengatur fungsi callback.
@@ -18,6 +21,7 @@ void mqtt_init();
  */
 void mqtt_loop();
 
+#if HYDROPONIC_INSTANCE == 1
 /**
  * @brief Mempublikasikan semua data sensor dari struct yang diberikan ke topik masing-masing.
  * 
@@ -27,19 +31,20 @@ void mqtt_loop();
 void mqtt_publish_sensor_data(const SensorValues &values);
 
 /**
- * @brief Mempublikasikan pesan heartbeat untuk menandakan perangkat sedang online.
- * 
- * @brief Publishes a heartbeat message to indicate the device is online.
- */
-void mqtt_publish_heartbeat();
-
-/**
  * @brief Mempublikasikan pesan peringatan generik ke topik peringatan global.
  * 
  * @brief Publishes a generic alert message to the global alert topic.
  * @param alertMessage Pesan peringatan yang akan dikirim. / The alert message to be sent.
  */
 void mqtt_publish_alert(const char* alertMessage);
+#endif
+
+/**
+ * @brief Mempublikasikan pesan heartbeat untuk menandakan perangkat sedang online.
+ * 
+ * @brief Publishes a heartbeat message to indicate the device is online.
+ */
+void mqtt_publish_heartbeat();
 
 /**
  * @brief Mempublikasikan pesan status generik ke sebuah topik. Digunakan oleh modul aktuator.

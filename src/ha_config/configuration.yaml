@@ -1,0 +1,115 @@
+# Loads default set of integrations. Do not remove.
+default_config:
+
+# Load frontend themes from the themes folder
+frontend:
+  themes: !include_dir_merge_named themes
+
+input_number: !include input_numbers.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+
+homeassistant:
+  # URL eksternal (HTTPS) yang akan digunakan untuk mengakses Home Assistant dari luar
+  external_url: "https://example.com" 
+  # URL internal (HTTP) yang digunakan Home Assistant untuk mengakses dirinya sendiri di jaringan lokal VPS
+  internal_url: "http://localhost:8123" 
+
+http:
+  # Mengaktifkan header X-Forwarded-For yang dikirim oleh reverse proxy (Nginx)
+  use_x_forwarded_for: true
+  # Daftar IP yang diizinkan untuk bertindak sebagai trusted proxy.
+  # localhost (127.0.0.1) harus ada karena Nginx berada di VPS yang sama.
+  trusted_proxies:
+    - 127.0.0.1
+    - ::1 
+
+# Konfigurasi MQTT (Format Modern & Lengkap)
+mqtt:
+  # =================================================
+  # == ENTITAS UNTUK INSTANCE 'PRODUKSI'
+  # =================================================
+  sensor:
+    - name: "Produksi - Level Air Tandon"
+      unique_id: hidroponik_produksi_level_air
+      state_topic: "hidroponik/produksi/air/level_cm"
+      unit_of_measurement: "cm"
+      icon: mdi:waves-arrow-up
+      value_template: "{{ value | float(0) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Suhu Air"
+      unique_id: hidroponik_produksi_suhu_air
+      state_topic: "hidroponik/produksi/air/suhu_c"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Suhu Udara"
+      unique_id: hidroponik_produksi_suhu_udara
+      state_topic: "hidroponik/produksi/udara/suhu_c"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Kelembaban Udara"
+      unique_id: hidroponik_produksi_kelembaban_udara
+      state_topic: "hidroponik/produksi/udara/kelembaban_persen"
+      unit_of_measurement: "%"
+      device_class: humidity
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - TDS Air"
+      unique_id: hidroponik_produksi_tds_air
+      state_topic: "hidroponik/produksi/air/tds_ppm"
+      unit_of_measurement: "ppm"
+      icon: mdi:water-opacity
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+  binary_sensor:
+    - name: "Produksi - Status ESP32"
+      unique_id: hidroponik_produksi_status_online
+      state_topic: "hidroponik/produksi/status/LWT"
+      payload_on: "Online"
+      payload_off: "Offline"
+      device_class: connectivity
+
+    # =================================================
+    # == ENTITAS UNTUK INSTANCE 'PENYEMAIAN'
+    # =================================================
+    - name: "Penyemaian - Status ESP32"
+      unique_id: hidroponik_penyemaian_status_online
+      state_topic: "hidroponik/penyemaian/status/LWT"
+      payload_on: "Online"
+      payload_off: "Offline"
+      device_class: connectivity
+
+  # Kontrol untuk Mode Sistem (hanya untuk Produksi)
+  select:
+    - name: "Produksi - Mode Sistem"
+      unique_id: hidroponik_produksi_mode_sistem
+      state_topic: "hidroponik/produksi/sistem/mode/status"
+      command_topic: "hidroponik/produksi/sistem/mode/kontrol"
+      options:
+        - "NUTRITION"
+        - "CLEANER"
+      optimistic: false
+      retain: true
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"

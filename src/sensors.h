@@ -1,38 +1,38 @@
 #ifndef SENSORS_H
 #define SENSORS_H
 
-#include <Arduino.h>
+#include <Arduino.h> // For isnan()
 
+#if HYDROPONIC_INSTANCE == 1
 /**
- * @brief Struct untuk menampung semua pembacaan sensor di satu tempat.
- *        Memudahkan untuk mengirim data sensor antar modul.
- * 
- * @brief A struct to hold all sensor readings in one place.
- *        This makes it easy to pass sensor data between modules.
+ * @struct SensorValues
+ * @brief A single structure to hold all sensor readings, making it easy to pass data between modules.
+ *        Struktur tunggal untuk menampung semua pembacaan sensor, memudahkan pengiriman data antar modul.
  */
 struct SensorValues {
-  float waterLevelCm;       // Ketinggian air dalam cm / Water level in cm
-  float waterDistanceCm;    // Jarak sensor ke permukaan air dalam cm / Distance from sensor to water surface in cm
-  float waterTempC;         // Suhu air dalam Celsius / Water temperature in Celsius
-  float airTempC;           // Suhu udara dalam Celsius / Air temperature in Celsius
-  float airHumidityPercent; // Kelembaban udara dalam persen / Air humidity in percent
-  float tdsPpm;             // Total Dissolved Solids dalam ppm / Total Dissolved Solids in ppm
+  float waterLevelCm;
+  float waterDistanceCm;
+  float waterTempC;
+  float airTempC;
+  float airHumidityPercent;
+  float tdsPpm;
 };
 
 /**
- * @brief Menginisialisasi semua sensor. Panggil fungsi ini di dalam setup().
+ * @brief Menginisialisasi semua sensor yang terhubung. Panggil fungsi ini sekali di dalam setup().
  * 
- * @brief Initializes all sensors. Call this in setup().
+ * @brief Initializes all connected sensors. Call this once in setup().
  */
 void sensors_init();
 
 /**
- * @brief Membaca semua sensor dan mengisi struct yang diberikan dengan nilai terbaru.
- *        Pembacaan yang tidak valid akan direpresentasikan dengan NAN (Not a Number).
+ * @brief Membaca semua sensor dan mengisi struct SensorValues yang diberikan.
  * 
- * @brief Reads all sensors and populates the provided struct with the latest values.
- *        Invalid readings will be represented by NAN (Not a Number).
+ * @brief Reads all sensors and populates the provided SensorValues struct.
+ * @param values Referensi ke struct SensorValues untuk diisi dengan data. / Reference to the SensorValues struct to be filled with data.
  */
 void sensors_read_all(SensorValues &values);
+
+#endif // HYDROPONIC_INSTANCE == 1
 
 #endif // SENSORS_H

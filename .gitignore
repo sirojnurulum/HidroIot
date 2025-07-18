@@ -4,3 +4,10 @@
 Makefile
 Makefile
 homeassistant/
+# PlatformIO build artifacts
+.pio/
+# VSCode specific
+.vscode/
+# Environment file with secrets
+.env
+credentials.ini

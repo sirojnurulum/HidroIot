@@ -1,22 +1,23 @@
 # ESP32 Hydroponics Automation System Project
 
-*(Replace with an actual image of your project)*
-
 This project is an automation system for hydroponic cultivation using an ESP32, MQTT, and integration with Home Assistant. The system monitors important parameters such as water level, water temperature, air temperature, humidity, and Total Dissolved Solids (TDS). Furthermore, it provides precise, volume-based control for nutrient and pH pumps, along with an early warning system for critical water levels.
 
 ## Table of Contents
 
-* [Main Features](#main-features)
-* [Component List](#component-list)
-* [Wiring Diagram](#wiring-diagram)
-* [Software Preparation](#software-preparation)
-* [Usage](#usage)
-* [Troubleshooting](#troubleshooting)
-* [Contribution](#contribution)
-* [License](#license)
+*   [Main Features](#main-features)
+*   [Multi-Instance Support](#multi-instance-support)
+*   [Component List](#component-list)
+*   [Wiring Diagram](#wiring-diagram)
+*   [Software Preparation](#software-preparation)
+*   [Home Assistant Configuration](#home-assistant-configuration)
+*   [Usage](#usage)
+*   [Troubleshooting](#troubleshooting)
+*   [Contribution](#contribution)
+*   [License](#license)
 
 ## Main Features
 
+*   **Multi-Instance Support:** A single codebase to generate different firmware for two types of installations (`production` and `seeding`).
 *   **Water Level Monitoring:** Uses an ultrasonic sensor to measure the water level in the reservoir and send it to Home Assistant.
 *   **Water Temperature Monitoring:** Reads water temperature using a DS18B20 sensor.
 *   **Air Temperature & Humidity Monitoring:** Uses a DHT22 sensor to monitor ambient air conditions.
@@ -26,24 +27,29 @@ This project is an automation system for hydroponic cultivation using an ESP32, 
 *   **Home Assistant Integration:** All sensor data and pump controls are fully integrated with Home Assistant via the MQTT protocol.
 *   **MQTT Heartbeat:** Sends periodic "alive" signals to Home Assistant to verify ESP32 connectivity.
 *   **Automatic Reconnection:** Automatic Wi-Fi and MQTT reconnection if connections are lost.
+*   **Secure Credential Management:** Separates Wi-Fi and MQTT credentials from the main code using a `credentials.ini` file.
+
+## Multi-Instance Support
+
+This project is designed to manage two types of hydroponic systems from the same codebase:
+1.  **`production` Instance:** A full-featured system, including all sensors, 3 dosing pumps, system modes, and alerts.
+2.  **`seeding` Instance:** A simple system with only one function: controlling a watering pump based on duration.
 
 ## Component List
 
-| Component                     | Quantity | Description                                        |
-| :---------------------------- | :------- | :------------------------------------------------- |
-| ESP32 Development Board       | 1        | Recommended: NodeMCU ESP32, ESP32 DevKitC          |
-| DC 12V 5A Power Supply        | 1        | For powering pumps and the relay module            |
-| JSN-SR04T Ultrasonic Sensor   | 1        | For water level measurement                        |
-| DS18B20 Temperature Sensor    | 1        | For water temperature                              |
-| DHT22 Temperature & Humidity Sensor | 1    | For air temperature & humidity                     |
-| Analog TDS Meter              | 1        | For measuring water nutrient concentration         |
-| Active Buzzer                 | 1        | For audible alerts                                 |
-| 8-Channel Relay Module        | 1        | For pump control           |
-| DC 12V 5W Peristaltic Pump    | 3        | Kamoer NKP-DC-504B or similar                      |
-| Jumper Wires                  | As needed | Male-to-Male, Female-to-Female, Male-to-Female     |
-| Breadboard (optional)         | 1        | For prototyping                                    |
-| Resistors (optional)          | As needed for sensors (e.g., DS18B20 pull-up) |
-| Enclosure Box (optional)      | 1        | For protection & neat installation                 |
+| Component                     | Qty (Production) | Qty (Seeding) | Description                                        |
+| :---------------------------- | :--------------- | :------------ | :------------------------------------------------- |
+| ESP32 Development Board       | 1                | 1             | Recommended: NodeMCU ESP32, ESP32 DevKitC          |
+| DC 12V Power Supply           | 1                | 1             | For powering pumps and the relay module            |
+| DC 12V Pump                   | 3 (Peristaltic)  | 1 (Any)       | Kamoer NKP (production) or a regular water pump (seeding) |
+| Relay Module                  | 1 (min. 3-ch)    | 1 (min. 1-ch) | For pump control                                   |
+| JSN-SR04T Ultrasonic Sensor   | 1                | 0             | For water level measurement                        |
+| DS18B20 Temperature Sensor    | 1                | 0             | For water temperature                              |
+| DHT22 Temp & Humidity Sensor  | 1                | 0             | For air temperature & humidity                     |
+| Analog TDS Meter              | 1                | 0             | For measuring water nutrient concentration         |
+| Active Buzzer                 | 1                | 0             | For audible alerts                                 |
+| Jumper Wires                  | As needed        | As needed     | Male-to-Male, Female-to-Female, Male-to-Female     |
+| Enclosure Box (optional)      | 1                | 1             | For protection & a neat installation               |
 
 ## Wiring Diagram
 
@@ -51,7 +57,7 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 
 **Important:** Ensure all `GND` connections are common (`Common Ground`). This means the ESP32's `GND`, the relay module's `DC -`, and the 12V Power Supply's `-V` must be connected to the same point.
 
-### ESP32 Pinout
+### Pinout for `Production` Instance
 
 | ESP32 Pin (GPIO) | Connected Component             | Description                                     |
 | :--------------- | :------------------------------ | :---------------------------------------------- |
@@ -67,6 +73,14 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 | GND              | All Component GNDs              | System Common Ground                            |
 | 5V (or VIN)      | Relay Module DC+                | Power for Relay Control Circuit                 |
 
+### Pinout for `Seeding` Instance
+
+| ESP32 Pin (GPIO) | Connected Component           | Description                                     |
+| :--------------- | :------------------------------ | :---------------------------------------------- |
+| 32               | PUMP_SIRAM_PIN (Relay INx)      | Watering Pump Control                           |
+| GND              | All Component GNDs              | System Common Ground                            |
+| 5V (or VIN)      | Relay Module DC+                | Power for Relay Control Circuit                 |
+
 ### DC 12V 5A Power Supply Connections
 
 *   `L (AC)` and `N (AC)` Terminals: Connect to your AC power source (e.g., 220V AC).
@@ -78,208 +92,273 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 
 **A. Control Side (ESP32 to Relay Module):**
 *   **Relay Module `DC -`** --connects to--> **`GND` Pin on your ESP32**.
-    *   (Ensure this is also connected to the `-V` of the 12V Power Supply for common ground).
 *   **Relay Module `DC +`** --connects to--> **`5V` (or `VIN`) Pin on your ESP32**.
 *   **Relay Module `IN1`** --connects to--> **ESP32 GPIO 25 (`PUMP_NUTRISI_A_PIN`)**.
 *   **Relay Module `IN2`** --connects to--> **ESP32 GPIO 26 (`PUMP_NUTRISI_B_PIN`)**.
 *   **Relay Module `IN3`** --connects to--> **ESP32 GPIO 27 (`PUMP_PH_PIN`)**.
+*   **Relay Module `INx`** --connects to--> **ESP32 GPIO 32 (`PUMP_SIRAM_PIN`)** (for the seeding instance).
 
 **B. Load Side (12V Power Supply to Relay to Pump):**
 
-*   **For Each Pump (Nutrient A, B, pH):**
+*   **For Each Pump:**
     *   **`+V` Terminal (+12V)** from your 12V Power Supply --connects to--> **`COM`** terminal on the relay channel you are using (e.g., `COM1`, `COM2`, `COM3`).
     *   **`NO` (Normally Open)** terminal on the relay channel you are using (e.g., `NO1`, `NO2`, `NO3`) --connects to--> **Positive (+) Wire of your Pump**.
     *   **Negative (-) Wire of your Pump** --connects directly to--> **`-V` Terminal (GND) of your 12V Power Supply**.
 
 **C. Jumper Settings on the Relay Module:**
+*   **Crucial:** On your relay module, move the `Low - Com - High` jumper to connect the **`Com` pin with the `High` pin** for each channel you are using. This setting makes the relay a "HIGH Level Trigger", which matches your code.
 
-*   **Crucial:** On your relay module, move the `Low - Com - High` jumper to connect the **`Com` pin with the `High` pin** for each channel you are using (e.g., channels 1, 2, and 3). This setting makes the relay a "HIGH Level Trigger", which matches your code.
+## Software Preparation (PlatformIO)
 
-## Software Preparation
+This project is designed to be compiled using **PlatformIO** within Visual Studio Code.
 
-### Arduino IDE
+1.  **Install VS Code & PlatformIO:**
+    *   Download and install Visual Studio Code.
+    *   Open VS Code, go to the Extensions tab (square icon), search for, and install the **PlatformIO IDE** extension.
 
-1.  **Install ESP32 Board Manager:**
+2.  **Open the Project:**
+    *   Clone this repository or download it as a ZIP and extract it.
+    *   In VS Code, go to `File > Open Folder...` and select the `HidroIot` project directory. PlatformIO will automatically detect the `platformio.ini` file and install all required dependencies.
 
-    *   Open Arduino IDE.
-    *   Go to `File > Preferences`.
-    *   In "Additional Boards Manager URLs", add the following URL:
-        `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
-    *   Go to `Tools > Board > Boards Manager...`.
-    *   Search for and install "esp32 by Espressif Systems".
-
-2.  **Install Libraries:**
-
-    *   Go to `Sketch > Include Library > Manage Libraries...`.
-    *   Search for and install the following libraries:
-        *   `PubSubClient by Nick O'Leary`
-        *   `NewPing by Tim Eckel`
-        *   `OneWire by Paul Stoffregen`
-        *   `DallasTemperature by Miles Burton`
-        *   `Adafruit Unified Sensor by Adafruit`
-        *   `DHT sensor library by Adafruit`
-
-3.  **Configure Project Code:**
-    *   Open the `src/config.cpp` file. This is the central place for all user-specific settings.
-    *   **Adjust Wi-Fi Configuration:**
-        ```cpp
-        const char *WIFI_SSID = "Your_WiFi_SSID";
-        const char *WIFI_PASSWORD = "Your_WiFi_Password";
+3.  **Create `credentials.ini` File:**
+    *   In the project's root directory (at the same level as `platformio.ini`), create a new file named `credentials.ini`.
+    *   Fill this file with your credentials. This file **will not** be uploaded to Git.
+        ```ini
+        [credentials]
+        wifi_ssid = "Your_WiFi_SSID"
+        wifi_password = "Your_WiFi_Password"
+        mqtt_user = "Your_MQTT_Username"
+        mqtt_pass = "Your_MQTT_Password"
         ```
-    *   **Adjust MQTT Broker Configuration:**
-        ```cpp
-        const char *MQTT_SERVER = "your_mqtt_broker_address"; // e.g., 192.168.1.100
-        const int MQTT_PORT = 1883;
-        const char *MQTT_USERNAME = "your_mqtt_username";
-        const char *MQTT_PASSWORD = "your_mqtt_password";
-        ```
-    *   **Adjust System & Sensor Calibration:** Modify values like `MQTT_CLIENT_ID`, `TANDON_MAX_HEIGHT_CM`, `WATER_LEVEL_CRITICAL_CM`, and `PUMP_MS_PER_ML` as needed for your specific hardware setup.
-    *   Save changes.
 
-4.  **Upload Code:**
-
-    *   Select your ESP32 board from `Tools > Board > ESP32 Arduino`.
-    *   Select the correct Serial port from `Tools > Port`.
-    *   Upload the code to your ESP32.
-
-### Home Assistant
+4.  **Select Environment and Upload:**
+    *   Connect your ESP32 board to your computer.
+    *   At the bottom of the VS Code window, you will see the PlatformIO status bar. Click on the environment name (e.g., `Default (produksi)`).
+    *   Choose the environment you want to upload: **`produksi`** or **`penyemaian`**.
+    *   Click the **Upload** button (right-arrow icon) in the status bar. PlatformIO will compile and upload the correct firmware to your device.
+## Home Assistant Configuration
 
 1.  **MQTT Broker Configuration:**
-
     *   Ensure you have an MQTT Broker (e.g., Mosquitto Broker Add-on) installed and configured in your Home Assistant.
 
-2.  **Pump Control in Home Assistant:**
+2.  **Entity Configuration in Home Assistant:**
+    *   Since this project now supports multiple instances, you need to add the corresponding YAML configuration for each ESP32 you deploy.
+    *   Copy the code blocks below into their respective files (`configuration.yaml`, `input_numbers.yaml`, `scripts.yaml`).
 
-    *   Since the pumps are now controlled by volume (e.g., "pump 50 ml") instead of a simple "ON/OFF", standard MQTT switches are no longer suitable. The recommended approach is to use `input_number` helpers and `scripts` to send specific volumes.
-    *   Add the following to your Home Assistant's `configuration.yaml` (or dedicated package files).
+    ---
 
-    *   **a. Create `input_number` helpers to select the volume:**
+    ### **Configuration for `PRODUCTION` Instance**
+
+    *   **a. Add to `input_numbers.yaml`:**
         ```yaml
-        # configuration.yaml
-        input_number:
-          pump_a_volume:
-            name: Nutrient A Dosing Volume
-            initial: 10
-            min: 1
-            max: 200
-            step: 1
-            unit_of_measurement: "ml"
-            icon: mdi:beaker-plus-outline
-            mode: box # Display as a text box instead of a slider
+        # Helpers for selecting pump volume (Production Instance)
+        produksi_pompa_a_volume:
+          name: "Production - Dose Volume A"
+          initial: 20
+          min: 1
+          max: 200
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:beaker-plus-outline
+          mode: box
 
-          pump_b_volume:
-            name: Nutrient B Dosing Volume
-            initial: 10
-            min: 1
-            max: 200
-            step: 1
-            unit_of_measurement: "ml"
-            icon: mdi:beaker-plus-outline
-            mode: box # Display as a text box instead of a slider
+        produksi_pompa_b_volume:
+          name: "Production - Dose Volume B"
+          initial: 20
+          min: 1
+          max: 200
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:beaker-plus-outline
+          mode: box
+
+        produksi_pompa_ph_volume:
+          name: "Production - Dose Volume pH"
+          initial: 10
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:ph
+          mode: box
         ```
 
-    *   **b. Create `scripts` to trigger the pumps with the selected volume:**
+    *   **b. Add to `scripts.yaml`:**
         ```yaml
-        # configuration.yaml
-        script:
-          dose_nutrient_a:
-            alias: "Dose Nutrient A"
-            icon: mdi:water-pump
-            sequence:
-              - service: mqtt.publish
-                data:
-                  topic: "hidroponik/pompa/nutrisi_a/kontrol"
-                  payload_template: "{{ states('input_number.pump_a_volume') }}"
-          # Create similar scripts for pump_b and pump_ph
+        # =================================================
+        # == SCRIPTS FOR 'PRODUCTION' INSTANCE
+        # =================================================
+        produksi_dosis_nutrisi_a:
+          alias: "Production - Dose Nutrient A"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/nutrisi_a/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_a_volume') | int(0) }}"
+                retain: false
+
+        produksi_dosis_nutrisi_b:
+          alias: "Production - Dose Nutrient B"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/nutrisi_b/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_b_volume') | int(0) }}"
+                retain: false
+
+        produksi_dosis_ph:
+          alias: "Production - Dose pH"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/ph/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_ph_volume') | int(0) }}"
+                retain: false
         ```
 
-3.  **MQTT Sensor Configuration:**
-
-    *   Add the sensor configuration to your `configuration.yaml` or an included `mqtt_sensors.yaml` file:
+    *   **c. Add to `configuration.yaml` (under `mqtt:`):**
         ```yaml
-        # Example for mqtt_sensors.yaml
-        - platform: mqtt
-          name: "Reservoir Water Level"
-          state_topic: "hidroponik/air/level_cm"
-          unit_of_measurement: "cm"
-          icon: mdi:waves-arrow-up
-          value_template: "{{ value | float(0) }}"
+        # MQTT Configuration (Modern & Complete Format)
+        mqtt:
+          # =================================================
+          # == ENTITIES FOR 'PRODUCTION' INSTANCE
+          # =================================================
+          sensor:
+            - name: "Production - Reservoir Water Level"
+              unique_id: hidroponik_produksi_level_air
+              state_topic: "hidroponik/produksi/air/level_cm"
+              unit_of_measurement: "cm"
+              icon: mdi:waves-arrow-up
+              value_template: "{{ value | float(0) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Water Sensor Distance"
-          state_topic: "hidroponik/air/jarak_sensor_cm"
-          unit_of_measurement: "cm"
-          icon: mdi:arrow-expand-vertical
-          value_template: "{{ value | float(0) }}"
+            - name: "Production - Water Temperature"
+              unique_id: hidroponik_produksi_suhu_air
+              state_topic: "hidroponik/produksi/air/suhu_c"
+              unit_of_measurement: "°C"
+              device_class: temperature
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Water Temperature"
-          state_topic: "hidroponik/air/suhu_c"
-          unit_of_measurement: "°C"
-          device_class: temperature
-          value_template: "{{ value | float(2) }}"
+            - name: "Production - Air Temperature"
+              unique_id: hidroponik_produksi_suhu_udara
+              state_topic: "hidroponik/produksi/udara/suhu_c"
+              unit_of_measurement: "°C"
+              device_class: temperature
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Air Temperature"
-          state_topic: "hidroponik/udara/suhu_c"
-          unit_of_measurement: "°C"
-          device_class: temperature
-          value_template: "{{ value | float(2) }}"
+            - name: "Production - Air Humidity"
+              unique_id: hidroponik_produksi_kelembaban_udara
+              state_topic: "hidroponik/produksi/udara/kelembaban_persen"
+              unit_of_measurement: "%"
+              device_class: humidity
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Air Humidity"
-          state_topic: "hidroponik/udara/kelembaban_persen"
-          unit_of_measurement: "%"
-          device_class: humidity
-          value_template: "{{ value | float(2) }}"
+            - name: "Production - Water TDS"
+              unique_id: hidroponik_produksi_tds_air
+              state_topic: "hidroponik/produksi/air/tds_ppm"
+              unit_of_measurement: "ppm"
+              icon: mdi:water-opacity
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Water TDS"
-          state_topic: "hidroponik/air/tds_ppm"
-          unit_of_measurement: "ppm"
-          icon: mdi:water-opacity
-          value_template: "{{ value | float(2) }}"
+          binary_sensor:
+            - name: "Production - ESP32 Status"
+              unique_id: hidroponik_produksi_status_online
+              state_topic: "hidroponik/produksi/status/LWT"
+              payload_on: "Online"
+              payload_off: "Offline"
+              device_class: connectivity
 
-        - platform: mqtt
-          name: "ESP32 Hydroponics Status"
-          state_topic: "tele/esp32hidro/LWT"
-          value_template: "{{ value }}"
-          icon: mdi:lan-connect
-
-        - platform: mqtt
-          name: "Hydroponics Alert"
-          state_topic: "hidroponik/peringatan"
-          value_template: "{{ value }}"
-          icon: mdi:alert
+          # System Mode Control (Production only)
+          select:
+            - name: "Production - System Mode"
+              unique_id: hidroponik_produksi_mode_sistem
+              state_topic: "hidroponik/produksi/sistem/mode/status"
+              command_topic: "hidroponik/produksi/sistem/mode/kontrol"
+              options:
+                - "NUTRITION"
+                - "CLEANER"
+              optimistic: false
+              retain: true
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
         ```
 
-    *   **c. Create a `select` entity to control the system mode:**
+    ---
+
+    ### **Configuration for `SEEDING` Instance**
+
+    *   **a. Add to `input_numbers.yaml`:**
         ```yaml
-        # configuration.yaml
-        select:
-          - name: "Hydroponics System Mode"
-            unique_id: hydroponics_system_mode
-            state_topic: "hidroponik/sistem/mode/status"
-            command_topic: "hidroponik/sistem/mode/kontrol"
-            options:
-              - "NUTRITION"
-              - "CLEANER"
-            optimistic: false
-            retain: true
+        # Helper for watering duration (Seeding Instance)
+        penyemaian_pompa_siram_durasi:
+          name: "Seeding - Watering Duration"
+          initial: 15
+          min: 1
+          max: 300 # Upper limit of 5 minutes, can be adjusted
+          step: 1
+          unit_of_measurement: "s"
+          icon: mdi:timer-sand
+          mode: box
         ```
 
-4.  **Restart Home Assistant:** After adding all configurations, restart Home Assistant for the changes to take effect.
+    *   **b. Add to `scripts.yaml`:**
+        ```yaml
+        # =================================================
+        # == SCRIPT FOR 'SEEDING' INSTANCE
+        # =================================================
+        siram_penyemaian:
+          alias: "Seeding - Water Pump"
+          icon: mdi:sprinkler-variant
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/penyemaian/pompa/siram/kontrol"
+                payload: "{{ states('input_number.penyemaian_pompa_siram_durasi') | int(0) }}"
+                retain: false
+        ```
 
+    *   **c. Add to `configuration.yaml` (under `mqtt: > binary_sensor:`):**
+        ```yaml
+          binary_sensor:
+            # ... (production binary sensor above this line) ...
+            # =================================================
+            # == ENTITIES FOR 'SEEDING' INSTANCE
+            # =================================================
+            - name: "Seeding - ESP32 Status"
+              unique_id: hidroponik_penyemaian_status_online
+              state_topic: "hidroponik/penyemaian/status/LWT"
+              payload_on: "Online"
+              payload_off: "Offline"
+              device_class: connectivity
+        ```
 ## Usage
 
 Once everything is assembled and configured:
 
 1.  Power on your 12V DC Power Supply.
 2.  The ESP32 will attempt to connect to Wi-Fi and then to your MQTT Broker.
-3.  Sensor data will begin to publish to Home Assistant every 5 seconds.
-4.  You can control the pumps by sending a numeric payload (e.g., `50` for 50ml) to the pump's `kontrol` topic. This can be done via Home Assistant scripts (as configured above) or any MQTT client.
-5.  To perform an emergency stop on a running pump, send the payload `OFF`.
-6.  If the reservoir water level reaches a critical threshold (20 cm or less), the system will send an MQTT alert and activate the buzzer.
+3.  Sensor data (for the `production` instance) will begin to publish to Home Assistant.
+4.  You can control the pumps via the Home Assistant dashboard.
+5.  To perform an emergency stop on a running pump, send the payload `OFF` to its control topic.
+6.  If the reservoir water level (for the `production` instance) reaches a critical threshold, the system will send an MQTT alert and activate the buzzer.
 
 ## Troubleshooting
 
@@ -288,13 +367,13 @@ Once everything is assembled and configured:
     *   **Check Relay Power:** Ensure the relay module is receiving sufficient and stable 5V power on its `DC+` pin.
     *   **Check Relay Jumper Settings:** Ensure the `Low - Com - High` jumper on the relay module is set to the **`Com - High`** position. This ensures the relay functions as a "HIGH Level Trigger" according to your code.
     *   **Check Serial Monitor:** When you send a command, the ESP32 serial monitor should print a `[Pump Control] Pumping X ml...` message. If it doesn't, the MQTT message is not being received or parsed correctly.
-*   **Sensors not reading data:**
+*   **Sensors not reading data (Production Instance):**
     *   Double-check the data pin connections of the sensors to the ESP32.
-    *   Ensure the sensor libraries are correctly installed.
+    *   Ensure the relevant sensor libraries have been correctly installed by PlatformIO.
 *   **ESP32 not connecting to Wi-Fi/MQTT:**
-    *   Double-check your credentials in `src/config.cpp`.
+    *   Double-check your credentials in the `credentials.ini` file.
     *   Ensure the ESP32 is within Wi-Fi range and your MQTT Broker is accessible.
-    *   Use the Arduino IDE Serial Monitor to view connection logs.
+    *   Use the Serial Monitor in PlatformIO to view detailed connection logs.
 
 ## Contribution
 

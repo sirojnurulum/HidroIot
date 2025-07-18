@@ -1,15 +1,15 @@
 # Proyek Sistem Otomatisasi Hidroponik ESP32
 
-*(Ganti dengan gambar proyek Anda yang sebenarnya)*
-
 Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32, MQTT, dan terintegrasi dengan Home Assistant. Sistem ini memantau parameter penting seperti level air, suhu air, suhu udara, kelembaban, dan Total Dissolved Solids (TDS). Selain itu, sistem ini menyediakan kontrol presisi berbasis volume untuk pompa nutrisi dan pH, serta sistem peringatan dini untuk level air kritis.
 
 ## Daftar Isi
 
 *   [Fitur Utama](#fitur-utama)
+*   [Dukungan Multi-Instance](#dukungan-multi-instance)
 *   [Daftar Komponen](#daftar-komponen)
 *   [Diagram Pengkabelan](#diagram-pengkabelan)
 *   [Persiapan Perangkat Lunak](#persiapan-perangkat-lunak)
+*   [Konfigurasi Home Assistant](#konfigurasi-home-assistant)
 *   [Penggunaan](#penggunaan)
 *   [Penyelesaian Masalah (Troubleshooting)](#penyelesaian-masalah-troubleshooting)
 *   [Kontribusi](#kontribusi)
@@ -17,6 +17,7 @@ Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32
 
 ## Fitur Utama
 
+*   **Dukungan Multi-Instance:** Satu basis kode untuk menghasilkan firmware yang berbeda untuk dua jenis instalasi (`produksi` dan `penyemaian`).
 *   **Pemantauan Level Air:** Menggunakan sensor ultrasonik untuk mengukur level air di tandon dan mengirimkannya ke Home Assistant.
 *   **Pemantauan Suhu Air:** Membaca suhu air menggunakan sensor DS18B20.
 *   **Pemantauan Suhu & Kelembaban Udara:** Menggunakan sensor DHT22 untuk memantau kondisi udara sekitar.
@@ -26,24 +27,29 @@ Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32
 *   **Integrasi Home Assistant:** Semua data sensor dan kontrol pompa terintegrasi penuh dengan Home Assistant melalui protokol MQTT.
 *   **MQTT Heartbeat:** Mengirim sinyal "hidup" secara berkala ke Home Assistant untuk memverifikasi konektivitas ESP32.
 *   **Koneksi Ulang Otomatis:** Koneksi ulang Wi-Fi dan MQTT otomatis jika koneksi terputus.
+*   **Manajemen Kredensial Aman:** Memisahkan kredensial Wi-Fi dan MQTT dari kode utama menggunakan file `credentials.ini`.
+
+## Dukungan Multi-Instance
+
+Proyek ini dirancang untuk mengelola dua jenis sistem hidroponik dari satu basis kode yang sama:
+1.  **Instance `produksi`:** Sistem dengan fitur lengkap, termasuk semua sensor, 3 pompa dosis, mode sistem, dan peringatan.
+2.  **Instance `penyemaian`:** Sistem sederhana yang hanya memiliki satu fungsi: mengontrol pompa penyiraman berdasarkan durasi.
 
 ## Daftar Komponen
 
-| Komponen                      | Jumlah   | Deskripsi                                          |
-| :---------------------------- | :------- | :------------------------------------------------- |
-| Papan Pengembangan ESP32      | 1        | Direkomendasikan: NodeMCU ESP32, ESP32 DevKitC     |
-| Catu Daya DC 12V 5A           | 1        | Untuk memberi daya pada pompa dan modul relay      |
-| Sensor Ultrasonik JSN-SR04T   | 1        | Untuk pengukuran level air                         |
-| Sensor Suhu DS18B20           | 1        | Untuk suhu air                                     |
-| Sensor Suhu & Kelembaban DHT22 | 1        | Untuk suhu & kelembaban udara                      |
-| Meteran TDS Analog            | 1        | Untuk mengukur konsentrasi nutrisi air             |
-| Buzzer Aktif                  | 1        | Untuk peringatan suara                             |
-| Modul Relay 8-Channel         | 1        | Untuk kontrol pompa                                |
-| Pompa Peristaltik DC 12V 5W   | 3        | Kamoer NKP-DC-504B atau sejenisnya                 |
-| Kabel Jumper                  | Secukupnya | Male-to-Male, Female-to-Female, Male-to-Female     |
-| Breadboard (opsional)         | 1        | Untuk prototipe                                    |
-| Resistor (opsional)           | Secukupnya | Untuk sensor (misalnya, pull-up DS18B20)           |
-| Kotak Enclosure (opsional)    | 1        | Untuk perlindungan & instalasi yang rapi           |
+| Komponen                      | Jumlah (Produksi) | Jumlah (Penyemaian) | Deskripsi                                          |
+| :---------------------------- | :---------------- | :------------------ | :------------------------------------------------- |
+| Papan Pengembangan ESP32      | 1                 | 1                   | Direkomendasikan: NodeMCU ESP32, ESP32 DevKitC     |
+| Catu Daya DC 12V              | 1                 | 1                   | Untuk memberi daya pada pompa dan modul relay      |
+| Pompa DC 12V                  | 3 (Peristaltik)   | 1 (Bebas)           | Kamoer NKP (produksi) atau pompa air biasa (penyemaian) |
+| Modul Relay                   | 1 (min. 3 channel)| 1 (min. 1 channel)  | Untuk kontrol pompa                                |
+| Sensor Ultrasonik JSN-SR04T   | 1                 | 0                   | Untuk pengukuran level air                         |
+| Sensor Suhu DS18B20           | 1                 | 0                   | Untuk suhu air                                     |
+| Sensor Suhu & Kelembaban DHT22 | 1                 | 0                   | Untuk suhu & kelembaban udara                      |
+| Meteran TDS Analog            | 1                 | 0                   | Untuk mengukur konsentrasi nutrisi air             |
+| Buzzer Aktif                  | 1                 | 0                   | Untuk peringatan suara                             |
+| Kabel Jumper                  | Secukupnya        | Secukupnya          | Male-to-Male, Female-to-Female, Male-to-Female     |
+| Kotak Enclosure (opsional)    | 1                 | 1                   | Untuk perlindungan & instalasi yang rapi           |
 
 ## Diagram Pengkabelan
 
@@ -51,7 +57,7 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 
 **Penting:** Pastikan semua koneksi `GND` terhubung menjadi satu (`Common Ground`). Ini berarti `GND` ESP32, `DC -` modul relay, dan `-V` Catu Daya 12V harus terhubung ke titik yang sama.
 
-### Pinout ESP32
+### Pinout untuk Instance `Produksi`
 
 | Pin ESP32 (GPIO) | Terhubung ke Komponen           | Deskripsi                                       |
 | :--------------- | :------------------------------ | :---------------------------------------------- |
@@ -67,6 +73,14 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 | GND              | Semua GND Komponen              | Common Ground Sistem                            |
 | 5V (atau VIN)    | Modul Relay DC+                 | Daya untuk Sirkuit Kontrol Relay                |
 
+### Pinout untuk Instance `Penyemaian`
+
+| Pin ESP32 (GPIO) | Terhubung ke Komponen           | Deskripsi                                       |
+| :--------------- | :------------------------------ | :---------------------------------------------- |
+| 32               | PUMP_SIRAM_PIN (Relay INx)      | Kontrol Pompa Penyiraman                        |
+| GND              | Semua GND Komponen              | Common Ground Sistem                            |
+| 5V (atau VIN)    | Modul Relay DC+                 | Daya untuk Sirkuit Kontrol Relay                |
+
 ### Koneksi Catu Daya DC 12V 5A
 
 *   Terminal `L (AC)` dan `N (AC)`: Hubungkan ke sumber listrik AC Anda (misalnya, 220V AC).
@@ -78,11 +92,11 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 
 **A. Sisi Kontrol (ESP32 ke Modul Relay):**
 *   **Modul Relay `DC -`** --terhubung ke--> **Pin `GND` pada ESP32 Anda**.
-    *   (Pastikan ini juga terhubung ke `-V` dari Catu Daya 12V untuk common ground).
 *   **Modul Relay `DC +`** --terhubung ke--> **Pin `5V` (atau `VIN`) pada ESP32 Anda**.
 *   **Modul Relay `IN1`** --terhubung ke--> **ESP32 GPIO 25 (`PUMP_NUTRISI_A_PIN`)**.
 *   **Modul Relay `IN2`** --terhubung ke--> **ESP32 GPIO 26 (`PUMP_NUTRISI_B_PIN`)**.
 *   **Modul Relay `IN3`** --terhubung ke--> **ESP32 GPIO 27 (`PUMP_PH_PIN`)**.
+*   **Modul Relay `INx`** --terhubung ke--> **ESP32 GPIO 32 (`PUMP_SIRAM_PIN`)** (untuk instance penyemaian).
 
 **B. Sisi Beban (Catu Daya 12V ke Relay ke Pompa):**
 
@@ -92,194 +106,260 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
     *   **Kabel Negatif (-) Pompa Anda** --terhubung langsung ke--> **Terminal `-V` (GND) dari Catu Daya 12V Anda**.
 
 **C. Pengaturan Jumper pada Modul Relay:**
-
 *   **Penting:** Pada modul relay Anda, pindahkan jumper `Low - Com - High` untuk menghubungkan pin **`Com` dengan pin `High`** untuk setiap channel yang Anda gunakan (misalnya, channel 1, 2, dan 3). Pengaturan ini membuat relay menjadi "HIGH Level Trigger", yang sesuai dengan kode Anda.
 
-## Persiapan Perangkat Lunak
+## Persiapan Perangkat Lunak (PlatformIO)
 
-### Arduino IDE
+Proyek ini dirancang untuk dikompilasi menggunakan **PlatformIO** di dalam Visual Studio Code.
 
-1.  **Instal Board Manager ESP32:**
+1.  **Instal VS Code & PlatformIO:**
+    *   Unduh dan instal Visual Studio Code.
+    *   Buka VS Code, pergi ke tab Extensions (ikon kotak), cari dan instal ekstensi **PlatformIO IDE**.
 
-    *   Buka Arduino IDE.
-    *   Buka `File > Preferences`.
-    *   Pada "Additional Boards Manager URLs", tambahkan URL berikut:
-        `https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json`
-    *   Buka `Tools > Board > Boards Manager...`.
-    *   Cari dan instal "esp32 by Espressif Systems".
+2.  **Buka Proyek:**
+    *   Clone repositori ini atau unduh sebagai ZIP dan ekstrak.
+    *   Di VS Code, buka `File > Open Folder...` dan pilih direktori proyek `HidroIot`. PlatformIO akan secara otomatis mendeteksi `platformio.ini` dan menginstal semua dependensi yang diperlukan.
 
-2.  **Instal Library:**
-
-    *   Buka `Sketch > Include Library > Manage Libraries...`.
-    *   Cari dan instal library-library berikut:
-        *   `PubSubClient by Nick O'Leary`
-        *   `NewPing by Tim Eckel`
-        *   `OneWire by Paul Stoffregen`
-        *   `DallasTemperature by Miles Burton`
-        *   `Adafruit Unified Sensor by Adafruit`
-        *   `DHT sensor library by Adafruit`
-
-3.  **Konfigurasi Kode Proyek:**
-    *   Buka file `src/config.cpp`. Ini adalah tempat utama untuk semua pengaturan spesifik pengguna.
-    *   **Sesuaikan Konfigurasi Wi-Fi:**
-        ```cpp
-        const char *WIFI_SSID = "SSID_WiFi_Anda";
-        const char *WIFI_PASSWORD = "Password_WiFi_Anda";
+3.  **Buat File `credentials.ini`:**
+    *   Di direktori utama proyek (di level yang sama dengan `platformio.ini`), buat file baru bernama `credentials.ini`.
+    *   Isi file tersebut dengan kredensial Anda. File ini **tidak akan** diunggah ke Git.
+        ```ini
+        [credentials]
+        wifi_ssid = "SSID_WiFi_Anda"
+        wifi_password = "Password_WiFi_Anda"
+        mqtt_user = "Username_MQTT_Anda"
+        mqtt_pass = "Password_MQTT_Anda"
         ```
-    *   **Sesuaikan Konfigurasi MQTT Broker:**
-        ```cpp
-        const char *MQTT_SERVER = "alamat_broker_mqtt_anda"; // cth., 192.168.1.100
-        const int MQTT_PORT = 1883;
-        const char *MQTT_USERNAME = "username_mqtt_anda";
-        const char *MQTT_PASSWORD = "password_mqtt_anda";
-        ```
-    *   **Sesuaikan Kalibrasi Sistem & Sensor:** Ubah nilai seperti `MQTT_CLIENT_ID`, `TANDON_MAX_HEIGHT_CM`, `WATER_LEVEL_CRITICAL_CM`, dan `PUMP_MS_PER_ML` sesuai dengan kebutuhan perangkat keras spesifik Anda.
-    *   Simpan perubahan.
 
-4.  **Unggah Kode:**
+4.  **Pilih Environment dan Unggah:**
+    *   Hubungkan papan ESP32 Anda ke komputer.
+    *   Di bagian bawah jendela VS Code, Anda akan melihat status bar PlatformIO. Klik pada nama environment (misalnya, `Default (produksi)`).
+    *   Pilih environment yang ingin Anda unggah: **`produksi`** atau **`penyemaian`**.
+    *   Klik tombol **Upload** (ikon panah ke kanan) di status bar. PlatformIO akan mengompilasi dan mengunggah firmware yang benar ke perangkat Anda.
 
-    *   Pilih board ESP32 Anda dari `Tools > Board > ESP32 Arduino`.
-    *   Pilih port Serial yang benar dari `Tools > Port`.
-    *   Unggah kode ke ESP32 Anda.
-
-### Home Assistant
+## Konfigurasi Home Assistant
 
 1.  **Konfigurasi MQTT Broker:**
-
     *   Pastikan Anda telah menginstal dan mengkonfigurasi MQTT Broker (misalnya, Mosquitto Broker Add-on) di Home Assistant Anda.
 
-2.  **Kontrol Pompa di Home Assistant:**
+2.  **Konfigurasi Entitas di Home Assistant:**
+    *   Karena proyek ini sekarang mendukung beberapa *instance*, Anda perlu menambahkan konfigurasi YAML yang sesuai untuk setiap ESP32 yang Anda pasang.
+    *   Salin blok kode di bawah ini ke file-file yang sesuai (`configuration.yaml`, `input_numbers.yaml`, `scripts.yaml`).
 
-    *   Karena pompa sekarang dikontrol berdasarkan volume (misalnya, "pompa 50 ml") dan bukan "ON/OFF" sederhana, saklar MQTT standar tidak lagi cocok. Pendekatan yang disarankan adalah menggunakan `input_number` helper dan `script` untuk mengirim volume spesifik.
-    *   Tambahkan kode berikut ke file `configuration.yaml` Home Assistant Anda (atau file paket khusus).
+    ---
 
-    *   **a. Buat `input_number` helper untuk memilih volume:**
+    ### **Konfigurasi untuk Instance `PRODUKSI`**
+
+    *   **a. Tambahkan ke `input_numbers.yaml`:**
         ```yaml
-        # configuration.yaml
-        input_number:
-          pompa_a_volume:
-            name: Volume Dosis Nutrisi A
-            initial: 10
-            min: 1
-            max: 200
-            step: 1
-            unit_of_measurement: "ml"
-            icon: mdi:beaker-plus-outline
-            mode: box # Tampilkan sebagai kotak teks, bukan slider
+        # Helper untuk memilih volume pompa (Instance Produksi)
+        produksi_pompa_a_volume:
+          name: "Produksi - Volume Dosis A"
+          initial: 20
+          min: 1
+          max: 200
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:beaker-plus-outline
+          mode: box
 
-          pompa_b_volume:
-            name: Volume Dosis Nutrisi B
-            initial: 10
-            min: 1
-            max: 200
-            step: 1
-            unit_of_measurement: "ml"
-            icon: mdi:beaker-plus-outline
-            mode: box # Tampilkan sebagai kotak teks, bukan slider
+        produksi_pompa_b_volume:
+          name: "Produksi - Volume Dosis B"
+          initial: 20
+          min: 1
+          max: 200
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:beaker-plus-outline
+          mode: box
+
+        produksi_pompa_ph_volume:
+          name: "Produksi - Volume Dosis pH"
+          initial: 10
+          min: 1
+          max: 100
+          step: 1
+          unit_of_measurement: "ml"
+          icon: mdi:ph
+          mode: box
         ```
 
-    *   **b. Buat `script` untuk memicu pompa dengan volume yang dipilih:**
+    *   **b. Tambahkan ke `scripts.yaml`:**
         ```yaml
-        # configuration.yaml
-        script:
-          dosis_nutrisi_a:
-            alias: "Beri Dosis Nutrisi A"
-            icon: mdi:water-pump
-            sequence:
-              - service: mqtt.publish
-                data:
-                  topic: "hidroponik/pompa/nutrisi_a/kontrol"
-                  payload_template: "{{ states('input_number.pompa_a_volume') }}"
-          # Buat script serupa untuk pompa_b dan pompa_ph
+        # =================================================
+        # == SCRIPT UNTUK INSTANCE 'PRODUKSI'
+        # =================================================
+        produksi_dosis_nutrisi_a:
+          alias: "Produksi - Dosis Nutrisi A"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/nutrisi_a/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_a_volume') | int(0) }}"
+                retain: false
+
+        produksi_dosis_nutrisi_b:
+          alias: "Produksi - Dosis Nutrisi B"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/nutrisi_b/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_b_volume') | int(0) }}"
+                retain: false
+
+        produksi_dosis_ph:
+          alias: "Produksi - Dosis pH"
+          icon: mdi:water-pump
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/produksi/pompa/ph/kontrol"
+                payload: "{{ states('input_number.produksi_pompa_ph_volume') | int(0) }}"
+                retain: false
         ```
 
-3.  **Konfigurasi Sensor MQTT:**
-
-    *   Tambahkan konfigurasi sensor ke file `configuration.yaml` Anda atau file `mqtt_sensors.yaml` yang di-include:
+    *   **c. Tambahkan ke `configuration.yaml` (di bawah `mqtt:`):**
         ```yaml
-        # Contoh untuk mqtt_sensors.yaml
-        - platform: mqtt
-          name: "Level Air Tandon"
-          state_topic: "hidroponik/air/level_cm"
-          unit_of_measurement: "cm"
-          icon: mdi:waves-arrow-up
-          value_template: "{{ value | float(0) }}"
+        # Konfigurasi MQTT (Format Modern & Lengkap)
+        mqtt:
+          # =================================================
+          # == ENTITAS UNTUK INSTANCE 'PRODUKSI'
+          # =================================================
+          sensor:
+            - name: "Produksi - Level Air Tandon"
+              unique_id: hidroponik_produksi_level_air
+              state_topic: "hidroponik/produksi/air/level_cm"
+              unit_of_measurement: "cm"
+              icon: mdi:waves-arrow-up
+              value_template: "{{ value | float(0) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Jarak Sensor Air"
-          state_topic: "hidroponik/air/jarak_sensor_cm"
-          unit_of_measurement: "cm"
-          icon: mdi:arrow-expand-vertical
-          value_template: "{{ value | float(0) }}"
+            - name: "Produksi - Suhu Air"
+              unique_id: hidroponik_produksi_suhu_air
+              state_topic: "hidroponik/produksi/air/suhu_c"
+              unit_of_measurement: "°C"
+              device_class: temperature
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Suhu Air"
-          state_topic: "hidroponik/air/suhu_c"
-          unit_of_measurement: "°C"
-          device_class: temperature
-          value_template: "{{ value | float(2) }}"
+            - name: "Produksi - Suhu Udara"
+              unique_id: hidroponik_produksi_suhu_udara
+              state_topic: "hidroponik/produksi/udara/suhu_c"
+              unit_of_measurement: "°C"
+              device_class: temperature
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Suhu Udara"
-          state_topic: "hidroponik/udara/suhu_c"
-          unit_of_measurement: "°C"
-          device_class: temperature
-          value_template: "{{ value | float(2) }}"
+            - name: "Produksi - Kelembaban Udara"
+              unique_id: hidroponik_produksi_kelembaban_udara
+              state_topic: "hidroponik/produksi/udara/kelembaban_persen"
+              unit_of_measurement: "%"
+              device_class: humidity
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "Kelembaban Udara"
-          state_topic: "hidroponik/udara/kelembaban_persen"
-          unit_of_measurement: "%"
-          device_class: humidity
-          value_template: "{{ value | float(2) }}"
+            - name: "Produksi - TDS Air"
+              unique_id: hidroponik_produksi_tds_air
+              state_topic: "hidroponik/produksi/air/tds_ppm"
+              unit_of_measurement: "ppm"
+              icon: mdi:water-opacity
+              value_template: "{{ value | float(2) }}"
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
 
-        - platform: mqtt
-          name: "TDS Air"
-          state_topic: "hidroponik/air/tds_ppm"
-          unit_of_measurement: "ppm"
-          icon: mdi:water-opacity
-          value_template: "{{ value | float(2) }}"
+          binary_sensor:
+            - name: "Produksi - Status ESP32"
+              unique_id: hidroponik_produksi_status_online
+              state_topic: "hidroponik/produksi/status/LWT"
+              payload_on: "Online"
+              payload_off: "Offline"
+              device_class: connectivity
 
-        - platform: mqtt
-          name: "Status ESP32 Hidroponik"
-          state_topic: "tele/esp32hidro/LWT"
-          value_template: "{{ value }}"
-          icon: mdi:lan-connect
-
-        - platform: mqtt
-          name: "Peringatan Hidroponik"
-          state_topic: "hidroponik/peringatan"
-          value_template: "{{ value }}"
-          icon: mdi:alert
+          # Kontrol untuk Mode Sistem (hanya untuk Produksi)
+          select:
+            - name: "Produksi - Mode Sistem"
+              unique_id: hidroponik_produksi_mode_sistem
+              state_topic: "hidroponik/produksi/sistem/mode/status"
+              command_topic: "hidroponik/produksi/sistem/mode/kontrol"
+              options:
+                - "NUTRITION"
+                - "CLEANER"
+              optimistic: false
+              retain: true
+              availability_topic: "hidroponik/produksi/status/LWT"
+              payload_available: "Online"
+              payload_not_available: "Offline"
         ```
 
-    *   **c. Buat entitas `select` untuk mengontrol mode sistem:**
+    ---
+
+    ### **Konfigurasi untuk Instance `PENYEMAIAN`**
+
+    *   **a. Tambahkan ke `input_numbers.yaml`:**
         ```yaml
-        # configuration.yaml
-        select:
-          - name: "Mode Sistem Hidroponik"
-            unique_id: hidroponik_mode_sistem
-            state_topic: "hidroponik/sistem/mode/status"
-            command_topic: "hidroponik/sistem/mode/kontrol"
-            options:
-              - "NUTRITION"
-              - "CLEANER"
-            optimistic: false
-            retain: true
+        # Helper untuk durasi penyiraman (Instance Penyemaian)
+        penyemaian_pompa_siram_durasi:
+          name: "Penyemaian - Durasi Siram"
+          initial: 15
+          min: 1
+          max: 300 # Batas atas 5 menit, bisa disesuaikan
+          step: 1
+          unit_of_measurement: "detik"
+          icon: mdi:timer-sand
+          mode: box
         ```
 
-4.  **Restart Home Assistant:** Setelah menambahkan semua konfigurasi, restart Home Assistant agar perubahan diterapkan.
+    *   **b. Tambahkan ke `scripts.yaml`:**
+        ```yaml
+        # =================================================
+        # == SCRIPT UNTUK INSTANCE 'PENYEMAIAN'
+        # =================================================
+        siram_penyemaian:
+          alias: "Penyemaian - Siram Pompa"
+          icon: mdi:sprinkler-variant
+          sequence:
+            - service: mqtt.publish
+              data:
+                topic: "hidroponik/penyemaian/pompa/siram/kontrol"
+                payload: "{{ states('input_number.penyemaian_pompa_siram_durasi') | int(0) }}"
+                retain: false
+        ```
 
+    *   **c. Tambahkan ke `configuration.yaml` (di bawah `mqtt: > binary_sensor:`):**
+        ```yaml
+          binary_sensor:
+            # ... (sensor biner produksi di atas baris ini) ...
+            # =================================================
+            # == ENTITAS UNTUK INSTANCE 'PENYEMAIAN'
+            # =================================================
+            - name: "Penyemaian - Status ESP32"
+              unique_id: hidroponik_penyemaian_status_online
+              state_topic: "hidroponik/penyemaian/status/LWT"
+              payload_on: "Online"
+              payload_off: "Offline"
+              device_class: connectivity
+        ```
 ## Penggunaan
 
-Setelah semuanya dirakit dan dikonfigurasi:
+Setelah semua dirakit dan dikonfigurasi:
 
 1.  Nyalakan Catu Daya DC 12V Anda.
 2.  ESP32 akan mencoba terhubung ke Wi-Fi dan kemudian ke Broker MQTT Anda.
-3.  Data sensor akan mulai dipublikasikan ke Home Assistant setiap 5 detik.
-4.  Anda dapat mengontrol pompa dengan mengirimkan payload numerik (misalnya, `50` untuk 50ml) ke topik `kontrol` pompa. Ini dapat dilakukan melalui skrip Home Assistant (seperti yang dikonfigurasi di atas) atau klien MQTT apa pun.
+3.  Data sensor (untuk instance `produksi`) akan mulai dipublikasikan ke Home Assistant.
+4.  Anda dapat mengontrol pompa melalui dasbor Home Assistant.
 5.  Untuk melakukan penghentian darurat pada pompa yang sedang berjalan, kirim payload `OFF`.
-6.  Jika level air tandon mencapai ambang batas kritis (20 cm atau kurang), sistem akan mengirimkan peringatan MQTT dan mengaktifkan buzzer.
+6.  Jika level air tandon (untuk instance `produksi`) mencapai ambang batas kritis, sistem akan mengirimkan peringatan MQTT dan mengaktifkan buzzer.
 
 ## Penyelesaian Masalah (Troubleshooting)
 
@@ -288,18 +368,18 @@ Setelah semuanya dirakit dan dikonfigurasi:
     *   **Periksa Daya Relay:** Pastikan modul relay menerima daya 5V yang cukup dan stabil pada pin `DC+`-nya.
     *   **Periksa Pengaturan Jumper Relay:** Pastikan jumper `Low - Com - High` pada modul relay diatur ke posisi **`Com - High`**. Ini memastikan relay berfungsi sebagai "HIGH Level Trigger" sesuai dengan kode Anda.
     *   **Periksa Serial Monitor:** Saat Anda mengirim perintah, monitor serial ESP32 seharusnya mencetak pesan `[Pump Control] Pumping X ml...`. Jika tidak, berarti pesan MQTT tidak diterima atau tidak di-parse dengan benar.
-*   **Sensor tidak membaca data:**
+*   **Sensor tidak membaca data (Instance Produksi):**
     *   Periksa kembali koneksi pin data sensor ke ESP32.
-    *   Pastikan library sensor telah diinstal dengan benar.
+    *   Pastikan library sensor yang relevan telah terinstal dengan benar oleh PlatformIO.
 *   **ESP32 tidak terhubung ke Wi-Fi/MQTT:**
-    *   Periksa kembali kredensial Anda di `src/config.cpp`.
+    *   Periksa kembali kredensial Anda di file `credentials.ini`.
     *   Pastikan ESP32 berada dalam jangkauan Wi-Fi dan Broker MQTT Anda dapat diakses.
-    *   Gunakan Serial Monitor Arduino IDE untuk melihat log koneksi.
+    *   Gunakan Serial Monitor di PlatformIO untuk melihat log koneksi secara detail.
 
 ## Kontribusi
 
-Kontribusi untuk proyek ini sangat diterima! Jika Anda memiliki saran, perbaikan, atau menemukan bug, jangan ragu untuk membuka issue atau mengirimkan pull request.
+Kontribusi untuk proyek ini sangat diterima! Jika Anda memiliki saran, perbaikan, atau menemukan bug, jangan ragu untuk membuka *issue* atau mengirimkan *pull request*.
 
 ## Lisensi
 
-Proyek ini dilisensikan di bawah Lisensi MIT. Anda bebas menggunakan, memodifikasi, dan mendistribusikan kode ini untuk tujuan pribadi atau komersial, dengan atribusi yang sesuai.
+Proyek ini dilisensikan di bawah Lisensi MIT. Anda bebas menggunakan, memodifikasi, dan mendistribusikan kode ini untuk keperluan pribadi atau komersial, dengan atribusi yang sesuai.

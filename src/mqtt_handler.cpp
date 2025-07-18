@@ -6,134 +6,89 @@
 #include "actuators.h" // To call actuator functions from MQTT callbacks
 
 // --- Module-Private (Static) Variables ---
-// Variabel ini sekarang bersifat lokal untuk file ini dan tersembunyi dari modul lain.
-// These variables are now local to this file and hidden from other modules.
 static WiFiClient espClient;
 static PubSubClient mqttClient(espClient);
 static unsigned long lastMqttReconnectAttempt = 0;
 
 // --- Forward Declarations for Static Functions ---
-// Deklarasi forward untuk fungsi-fungsi statis (privat) dalam modul ini.
-// Forward declarations for static (private) functions within this module.
 static void mqtt_callback(char *topic, byte *payload, unsigned int length);
 static void mqtt_reconnect();
 static bool publish_data(const char *topic, const char *payload, bool retain);
 
 // --- Public Function Implementations ---
 
-/**
- * @brief Menginisialisasi klien MQTT dengan server dan fungsi callback.
- * 
- * @brief Initializes the MQTT client with the server and callback function.
- */
 void mqtt_init() {
   mqttClient.setServer(MQTT_SERVER, MQTT_PORT);
   mqttClient.setCallback(mqtt_callback);
 }
 
-/**
- * @brief Loop untuk MQTT, menangani koneksi ulang non-blocking dan memproses pesan.
- * 
- * @brief Loop for MQTT, handles non-blocking reconnection and message processing.
- */
 void mqtt_loop() {
-  // Reconnect if connection is lost (and WiFi is available)
-  // Sambungkan kembali jika koneksi terputus (dan WiFi tersedia)
   if (!mqttClient.connected() && WiFi.status() == WL_CONNECTED)
   {
     unsigned long now = millis();
     if (now - lastMqttReconnectAttempt > MQTT_RECONNECT_DELAY_MS)
     {
       lastMqttReconnectAttempt = now;
-      mqtt_reconnect(); // Attempt to reconnect
+      mqtt_reconnect();
     }
   }
-  mqttClient.loop(); // Process messages and maintain connection
+  mqttClient.loop();
 }
 
-/**
- * @brief Memeriksa apakah klien MQTT sedang terhubung.
- * 
- * @brief Checks if the MQTT client is currently connected.
- */
 bool mqtt_is_connected() {
   return mqttClient.connected();
 }
 
-/**
- * @brief Mempublikasikan semua data sensor yang valid ke topik MQTT masing-masing.
- * 
- * @brief Publishes all valid sensor data to their respective MQTT topics.
- */
+#if HYDROPONIC_INSTANCE == 1
 void mqtt_publish_sensor_data(const SensorValues &values) {
   char payloadBuffer[10];
 
-  // Publish Water Level & Distance
-  // Publikasikan Level & Jarak Air
   if (isnan(values.waterLevelCm)) {
-    publish_data(STATE_TOPIC_LEVEL, "unavailable", false);
-    publish_data(STATE_TOPIC_DISTANCE, "unavailable", false);
+    publish_data(STATE_TOPIC_LEVEL.c_str(), "unavailable", false);
+    publish_data(STATE_TOPIC_DISTANCE.c_str(), "unavailable", false);
   } else {
     dtostrf(values.waterDistanceCm, 4, 0, payloadBuffer);
-    publish_data(STATE_TOPIC_DISTANCE, payloadBuffer, false);
+    publish_data(STATE_TOPIC_DISTANCE.c_str(), payloadBuffer, false);
     dtostrf(values.waterLevelCm, 4, 1, payloadBuffer);
-    publish_data(STATE_TOPIC_LEVEL, payloadBuffer, false);
+    publish_data(STATE_TOPIC_LEVEL.c_str(), payloadBuffer, false);
   }
 
-  // Publish Water Temperature
-  // Publikasikan Suhu Air
   if (isnan(values.waterTempC)) {
-    publish_data(STATE_TOPIC_WATER_TEMPERATURE, "unavailable", false);
+    publish_data(STATE_TOPIC_WATER_TEMPERATURE.c_str(), "unavailable", false);
   } else {
     dtostrf(values.waterTempC, 5, 2, payloadBuffer);
-    publish_data(STATE_TOPIC_WATER_TEMPERATURE, payloadBuffer, false);
+    publish_data(STATE_TOPIC_WATER_TEMPERATURE.c_str(), payloadBuffer, false);
   }
 
-  // Publish Air Temperature & Humidity
-  // Publikasikan Suhu & Kelembaban Udara
   if (isnan(values.airTempC)) {
-    publish_data(STATE_TOPIC_AIR_TEMPERATURE, "unavailable", false);
-    publish_data(STATE_TOPIC_HUMIDITY, "unavailable", false);
+    publish_data(STATE_TOPIC_AIR_TEMPERATURE.c_str(), "unavailable", false);
+    publish_data(STATE_TOPIC_HUMIDITY.c_str(), "unavailable", false);
   } else {
     dtostrf(values.airTempC, 5, 2, payloadBuffer);
-    publish_data(STATE_TOPIC_AIR_TEMPERATURE, payloadBuffer, false);
+    publish_data(STATE_TOPIC_AIR_TEMPERATURE.c_str(), payloadBuffer, false);
     dtostrf(values.airHumidityPercent, 5, 2, payloadBuffer);
-    publish_data(STATE_TOPIC_HUMIDITY, payloadBuffer, false);
+    publish_data(STATE_TOPIC_HUMIDITY.c_str(), payloadBuffer, false);
   }
 
-  // Publish TDS
-  // Publikasikan TDS
   if (isnan(values.tdsPpm)) {
-    publish_data(STATE_TOPIC_TDS, "unavailable", false);
+    publish_data(STATE_TOPIC_TDS.c_str(), "unavailable", false);
   } else {
     dtostrf(values.tdsPpm, 5, 2, payloadBuffer);
-    publish_data(STATE_TOPIC_TDS, payloadBuffer, false);
+    publish_data(STATE_TOPIC_TDS.c_str(), payloadBuffer, false);
   }
 }
+#endif
 
-/**
- * @brief Mempublikasikan pesan heartbeat.
- * 
- * @brief Publishes a heartbeat message.
- */
 void mqtt_publish_heartbeat() {
-  publish_data(HEARTBEAT_TOPIC, "ESP32 Online", true);
+  publish_data(HEARTBEAT_TOPIC.c_str(), "ESP32 Online", true);
 }
 
-/**
- * @brief Mempublikasikan pesan peringatan.
- * 
- * @brief Publishes an alert message.
- */
+#if HYDROPONIC_INSTANCE == 1
 void mqtt_publish_alert(const char* alertMessage) {
-  publish_data(MQTT_GLOBAL_ALERT_TOPIC, alertMessage, false);
+  publish_data(MQTT_GLOBAL_ALERT_TOPIC.c_str(), alertMessage, false);
 }
+#endif
 
-/**
- * @brief Mempublikasikan pesan status generik (misalnya, status pompa).
- * 
- * @brief Publishes a generic state message (e.g., pump status).
- */
 void mqtt_publish_state(const char* topic, const char* payload, bool retain) {
   publish_data(topic, payload, retain);
 }
@@ -141,13 +96,6 @@ void mqtt_publish_state(const char* topic, const char* payload, bool retain) {
 
 // --- Static (Private) Function Implementations ---
 
-/**
- * @brief Fungsi pembantu privat untuk mempublikasikan data ke topik MQTT.
- *        Menangani pemeriksaan koneksi sebelum mempublikasikan.
- * 
- * @brief Private helper function to publish data to an MQTT topic.
- *        Handles connection checking before publishing.
- */
 static bool publish_data(const char *topic, const char *payload, bool retain) {
   if (!mqttClient.connected()) {
     LOG_PRINT("     [PUB] MQTT Client not connected. Skipping publish to ");
@@ -162,11 +110,6 @@ static bool publish_data(const char *topic, const char *payload, bool retain) {
   return mqttClient.publish(topic, payload, retain);
 }
 
-/**
- * @brief Fungsi callback yang dipanggil ketika pesan MQTT diterima.
- * 
- * @brief Callback function that is invoked when an MQTT message is received.
- */
 static void mqtt_callback(char *topic, byte *payload, unsigned int length) {
   LOG_PRINT("\n[MQTT Command] Message arrived on topic: ");
   LOG_PRINT(topic);
@@ -174,36 +117,35 @@ static void mqtt_callback(char *topic, byte *payload, unsigned int length) {
   String messagePayload(reinterpret_cast<char*>(payload), length);
   LOG_PRINTLN(messagePayload);
 
-  // Check if it's a system mode command
-  if (strcmp(topic, COMMAND_TOPIC_SYSTEM_MODE) == 0) {
+#if HYDROPONIC_INSTANCE == 1
+  if (topic == COMMAND_TOPIC_SYSTEM_MODE) {
     actuators_handle_mode_command(messagePayload);
   } else {
-    // Otherwise, assume it's a pump command and let the handler figure it out
-    // Jika tidak, asumsikan itu adalah perintah pompa dan biarkan handler yang menanganinya
     actuators_handle_pump_command(topic, messagePayload);
   }
+#elif HYDROPONIC_INSTANCE == 2
+  actuators_handle_pump_command(topic, messagePayload);
+#endif
 }
 
-/**
- * @brief Mencoba untuk terhubung kembali ke broker MQTT.
- * 
- * @brief Attempts to reconnect to the MQTT broker.
- */
 static void mqtt_reconnect() {
   LOG_PRINT("[MQTT] Attempting MQTT connection...");
   if (mqttClient.connect(MQTT_CLIENT_ID, MQTT_USERNAME, MQTT_PASSWORD,
-                         AVAILABILITY_TOPIC, 0, true, "Offline")) {
+                         AVAILABILITY_TOPIC.c_str(), 0, true, "Offline")) {
     LOG_PRINTLN("connected");
-    publish_data(AVAILABILITY_TOPIC, "Online", true);
+    publish_data(AVAILABILITY_TOPIC.c_str(), "Online", true);
 
-    // Minta modul aktuator untuk mempublikasikan status awalnya
-    actuators_publish_states(); // Ask the actuator module to publish its initial states
+    actuators_publish_states();
 
-    mqttClient.subscribe(COMMAND_TOPIC_PUMP_A);
-    mqttClient.subscribe(COMMAND_TOPIC_PUMP_B);
-    mqttClient.subscribe(COMMAND_TOPIC_PUMP_PH);
-    mqttClient.subscribe(COMMAND_TOPIC_SYSTEM_MODE);
-    LOG_PRINTLN("[MQTT] Subscribed to pump control topics.");
+#if HYDROPONIC_INSTANCE == 1
+    mqttClient.subscribe(COMMAND_TOPIC_PUMP_A.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_PUMP_B.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_PUMP_PH.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_SYSTEM_MODE.c_str());
+#elif HYDROPONIC_INSTANCE == 2
+    mqttClient.subscribe(COMMAND_TOPIC_PUMP_SIRAM.c_str());
+#endif
+    LOG_PRINTLN("[MQTT] Subscribed to relevant control topics.");
   } else {
     LOG_PRINT("[MQTT] failed, rc=");
     LOG_PRINT(mqttClient.state());

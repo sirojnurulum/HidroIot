@@ -1,66 +1,54 @@
 #ifndef MQTT_HANDLER_H
 #define MQTT_HANDLER_H
 
-#include <PubSubClient.h>
+#include <string>
 
 #if HYDROPONIC_INSTANCE == 1
 #include "sensors.h" // For SensorValues struct
 #endif
 
 /**
- * @brief Menginisialisasi klien MQTT dan mengatur fungsi callback.
- * 
- * @brief Initializes the MQTT client and sets the callback function.
+ * @brief Initializes the MQTT client and sets the server and callback.
  */
 void mqtt_init();
 
 /**
- * @brief Menangani koneksi MQTT dan memproses pesan masuk. Panggil fungsi ini di dalam loop() utama.
- * 
- * @brief Handles MQTT connection and processes incoming messages. Call this in the main loop().
+ * @brief Main loop for the MQTT handler. Manages connection and processes messages.
+ *        Should be called repeatedly from the main application loop.
  */
 void mqtt_loop();
 
+/**
+ * @brief Checks if the MQTT client is currently connected to the broker.
+ * @return true if connected, false otherwise.
+ */
+bool mqtt_is_connected();
+
+/**
+ * @brief Publishes a generic state message to a specific topic.
+ * @param topic The destination MQTT topic.
+ * @param payload The message payload to send.
+ * @param retain True to make the message a retained message, false otherwise.
+ */
+void mqtt_publish_state(const std::string& topic, const char* payload, bool retain);
+
+/**
+ * @brief Publishes a heartbeat message to the designated heartbeat topic.
+ */
+void mqtt_publish_heartbeat();
+
 #if HYDROPONIC_INSTANCE == 1
 /**
- * @brief Mempublikasikan semua data sensor dari struct yang diberikan ke topik masing-masing.
- * 
- * @brief Publishes all sensor data from the provided struct to their respective topics.
- * @param values Struct SensorValues yang berisi data sensor terbaru. / The SensorValues struct containing the latest sensor data.
+ * @brief Publishes all sensor data from the provided SensorValues struct.
+ * @param values The struct containing the latest sensor data.
  */
 void mqtt_publish_sensor_data(const SensorValues &values);
 
 /**
- * @brief Mempublikasikan pesan peringatan generik ke topik peringatan global.
- * 
- * @brief Publishes a generic alert message to the global alert topic.
- * @param alertMessage Pesan peringatan yang akan dikirim. / The alert message to be sent.
+ * @brief Publishes an alert message to the designated global alert topic.
+ * @param alertMessage The content of the alert message.
  */
 void mqtt_publish_alert(const char* alertMessage);
 #endif
-
-/**
- * @brief Mempublikasikan pesan heartbeat untuk menandakan perangkat sedang online.
- * 
- * @brief Publishes a heartbeat message to indicate the device is online.
- */
-void mqtt_publish_heartbeat();
-
-/**
- * @brief Mempublikasikan pesan status generik ke sebuah topik. Digunakan oleh modul aktuator.
- * 
- * @brief Publishes a generic state message to a topic. This will be used by the actuators module.
- * @param topic Topik MQTT tujuan. / The destination MQTT topic.
- * @param payload Pesan yang akan dikirim. / The message to be sent.
- * @param retain Apakah pesan harus dipertahankan (retained) oleh broker. / Whether the message should be retained by the broker.
- */
-void mqtt_publish_state(const char* topic, const char* payload, bool retain);
-
-/**
- * @brief Mengembalikan true jika klien MQTT sedang terhubung.
- * 
- * @brief Returns true if the MQTT client is currently connected.
- */
-bool mqtt_is_connected();
 
 #endif // MQTT_HANDLER_H

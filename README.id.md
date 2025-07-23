@@ -4,16 +4,24 @@ Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32
 
 ## Daftar Isi
 
-*   [Fitur Utama](#fitur-utama)
-*   [Dukungan Multi-Instance](#dukungan-multi-instance)
-*   [Daftar Komponen](#daftar-komponen)
-*   [Diagram Pengkabelan](#diagram-pengkabelan)
-*   [Persiapan Perangkat Lunak](#persiapan-perangkat-lunak)
-*   [Konfigurasi Home Assistant](#konfigurasi-home-assistant)
-*   [Penggunaan](#penggunaan)
-*   [Penyelesaian Masalah (Troubleshooting)](#penyelesaian-masalah-troubleshooting)
-*   [Kontribusi](#kontribusi)
-*   [Lisensi](#lisensi)
+- [Proyek Sistem Otomatisasi Hidroponik ESP32](#proyek-sistem-otomatisasi-hidroponik-esp32)
+  - [Daftar Isi](#daftar-isi)
+  - [Fitur Utama](#fitur-utama)
+  - [Dukungan Multi-Instance](#dukungan-multi-instance)
+  - [Daftar Komponen](#daftar-komponen)
+  - [Arsitektur Sistem (Pengaturan Dua Box)](#arsitektur-sistem-pengaturan-dua-box)
+    - [Koneksi Antar-Box (Kabel LAN)](#koneksi-antar-box-kabel-lan)
+  - [Diagram Pengkabelan](#diagram-pengkabelan)
+    - [Pinout untuk Instance `Produksi`](#pinout-untuk-instance-produksi)
+    - [Pinout untuk Instance `Penyemaian`](#pinout-untuk-instance-penyemaian)
+    - [Koneksi Catu Daya DC 12V 5A](#koneksi-catu-daya-dc-12v-5a)
+    - [Koneksi Modul Relay 8-Channel](#koneksi-modul-relay-8-channel)
+  - [Persiapan Perangkat Lunak (PlatformIO)](#persiapan-perangkat-lunak-platformio)
+  - [Konfigurasi Home Assistant](#konfigurasi-home-assistant)
+  - [Penggunaan](#penggunaan)
+  - [Penyelesaian Masalah (Troubleshooting)](#penyelesaian-masalah-troubleshooting)
+  - [Kontribusi](#kontribusi)
+  - [Lisensi](#lisensi)
 
 ## Fitur Utama
 
@@ -22,6 +30,8 @@ Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32
 *   **Pemantauan Suhu Air:** Membaca suhu air menggunakan sensor DS18B20.
 *   **Pemantauan Suhu & Kelembaban Udara:** Menggunakan sensor DHT22 untuk memantau kondisi udara sekitar.
 *   **Pemantauan TDS:** Mengukur Total Dissolved Solids (konsentrasi nutrisi) di dalam air dengan kompensasi suhu.
+*   **Pemantauan pH:** Mengukur tingkat keasaman (pH) air menggunakan sensor analog PH-4502C.
+*   **Pemantauan Konsumsi Listrik:** Mengukur tegangan, arus, daya, dan energi menggunakan sensor PZEM-004T.
 *   **Kontrol Pompa Berbasis Volume:** Mengontrol 3 pompa peristaltik (Nutrisi A, Nutrisi B, dan pH) secara presisi berdasarkan volume (ml).
 *   **Notifikasi & Peringatan:** Sistem peringatan level air kritis dengan notifikasi MQTT dan buzzer.
 *   **Integrasi Home Assistant:** Semua data sensor dan kontrol pompa terintegrasi penuh dengan Home Assistant melalui protokol MQTT.
@@ -47,9 +57,45 @@ Proyek ini dirancang untuk mengelola dua jenis sistem hidroponik dari satu basis
 | Sensor Suhu DS18B20           | 1                 | 0                   | Untuk suhu air                                     |
 | Sensor Suhu & Kelembaban DHT22 | 1                 | 0                   | Untuk suhu & kelembaban udara                      |
 | Meteran TDS Analog            | 1                 | 0                   | Untuk mengukur konsentrasi nutrisi air             |
+| Sensor pH PH-4502C            | 1                 | 0                   | Untuk mengukur tingkat pH air                      |
+| Sensor Listrik PZEM-004T v4   | 1                 | 0                   | Untuk mengukur konsumsi listrik                    |
 | Buzzer Aktif                  | 1                 | 0                   | Untuk peringatan suara                             |
 | Kabel Jumper                  | Secukupnya        | Secukupnya          | Male-to-Male, Female-to-Female, Male-to-Female     |
 | Kotak Enclosure (opsional)    | 1                 | 1                   | Untuk perlindungan & instalasi yang rapi           |
+
+## Arsitektur Sistem (Pengaturan Dua Box)
+
+Untuk meningkatkan keamanan dan modularitas, sistem ini dirancang untuk dipisah menjadi dua box (kotak) terpisah:
+
+*   **Box 1 (Box Kontroler):** Berisi komponen pemrosesan utama dan komponen tegangan tinggi, ditempatkan di area yang kering.
+    *   Papan Pengembangan ESP32
+    *   Sensor Listrik PZEM-004T
+    *   Modul Relay
+    *   Buzzer
+    *   Sensor Suhu & Kelembaban Udara DHT22
+
+*   **Box 2 (Box Sensor):** Berisi semua sensor "basah" yang ditempatkan di dekat atau di dalam tandon air.
+    *   Sensor Ultrasonik JSN-SR04T
+    *   Sensor Suhu Air DS18B20
+    *   Sensor TDS Analog
+    *   Sensor pH PH-4502C
+
+### Koneksi Antar-Box (Kabel LAN)
+
+Satu buah **kabel LAN Cat5e atau Cat6** (dengan panjang hingga 2-3 meter) digunakan untuk menghubungkan kedua box. Ini menyediakan cara yang rapi dan terorganisir untuk menyalurkan semua kabel yang diperlukan.
+
+| Fungsi Sinyal          | Pin ESP32 (di Box 1) | Warna Kabel LAN (Standar T568B) | Keterangan                               |
+| :--------------------- | :------------------- | :------------------------------ | :--------------------------------------- |
+| **Daya 5V**            | `5V`                 | Coklat                          | Daya untuk Sensor Ultrasonik             |
+| **Ground**             | `GND`                | Putih-Coklat                    | **Common Ground** untuk semua sensor     |
+| **Daya 3.3V**          | `3V3`                | Biru                            | Daya untuk sensor pH, TDS, dan DS18B20   |
+| **Data Suhu Air**      | `GPIO 18`            | Putih-Biru                      | Sinyal data dari DS18B20 (One-Wire)      |
+| **Ultrasonic Trigger** | `GPIO 5`             | Oranye                          | Sinyal *trigger* ke sensor ultrasonik    |
+| **Ultrasonic Echo**    | `GPIO 4`             | Putih-Oranye                    | Sinyal *echo* dari sensor ultrasonik     |
+| **Data pH**            | `GPIO 32`            | Hijau                           | Sinyal analog dari sensor pH             |
+| **Data TDS**           | `GPIO 34`            | Putih-Hijau                     | Sinyal analog dari sensor TDS            |
+
+**⚠️ Peringatan Penting:** Memperpanjang kabel sensor, terutama untuk sinyal analog (pH, TDS) dan sinyal digital yang sensitif terhadap waktu (Ultrasonik, DS18B20), sejauh 2-3 meter dapat menimbulkan gangguan (noise) dan degradasi sinyal. Hal ini dapat menyebabkan pembacaan yang tidak akurat atau tidak stabil. Meskipun pengaturan ini dapat berfungsi, solusi profesional yang lebih andal adalah dengan menempatkan mikrokontroler kedua (seperti ESP8266) di Box 2 untuk memproses data sensor secara lokal dan mengirimkannya secara digital. Lanjutkan dengan pengaturan satu kontroler ini atas pertimbangan Anda sendiri.
 
 ## Diagram Pengkabelan
 
@@ -63,15 +109,19 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 | :--------------- | :------------------------------ | :---------------------------------------------- |
 | 5                | ULTRASONIC_TRIGGER_PIN (JSN-SR04T Trig) | Sinyal Trigger Sensor Ultrasonik                |
 | 4                | ULTRASONIC_ECHO_PIN (JSN-SR04T Echo)   | Sinyal Echo Sensor Ultrasonik                   |
-| 16               | ONE_WIRE_BUS (DS18B20 Data)            | Pin Data Sensor Suhu Air                        |
+| 18               | ONE_WIRE_BUS (DS18B20 Data)            | Pin Data Sensor Suhu Air                        |
 | 13               | DHT_PIN (DHT22 Data)                   | Pin Data Sensor Suhu & Kelembaban Udara         |
-| 17               | BUZZER_PIN                      | Pin Kontrol Buzzer                              |
+| 19               | BUZZER_PIN                      | Pin Kontrol Buzzer                              |
 | 34               | TDS_SENSOR_PIN                 | Sinyal analog dari papan adapter sensor TDS     |
+| 32               | PH_SENSOR_PIN                  | Sinyal analog dari papan adapter sensor pH      |
+| 16               | PZEM-004T TX (ke ESP32 RX2)     | Data Keluar Sensor Listrik                      |
+| 17               | PZEM-004T RX (ke ESP32 TX2)     | Data Masuk Sensor Listrik                       |
 | 25               | PUMP_NUTRISI_A_PIN (Relay IN1)  | Kontrol Pompa Nutrisi A                         |
 | 26               | PUMP_NUTRISI_B_PIN (Relay IN2)  | Kontrol Pompa Nutrisi B                         |
 | 27               | PUMP_PH_PIN (Relay IN3)         | Kontrol Pompa pH                                |
 | GND              | Semua GND Komponen              | Common Ground Sistem                            |
-| 5V (atau VIN)    | Modul Relay DC+                 | Daya untuk Sirkuit Kontrol Relay                |
+| 5V (atau VIN)    | Modul Relay DC+ & PZEM-004T     | Daya untuk Sirkuit Kontrol                      |
+| 3V3              | Modul pH & TDS VCC              | Daya untuk Modul Sensor Analog                  |
 
 ### Pinout untuk Instance `Penyemaian`
 

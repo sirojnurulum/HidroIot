@@ -12,7 +12,7 @@ scene: !include scenes.yaml
 
 homeassistant:
   # URL eksternal (HTTPS) yang akan digunakan untuk mengakses Home Assistant dari luar
-  external_url: "https://example.com" 
+  external_url: "https://ha.o-m-b.id" 
   # URL internal (HTTP) yang digunakan Home Assistant untuk mengakses dirinya sendiri di jaringan lokal VPS
   internal_url: "http://localhost:8123" 
 
@@ -80,6 +80,87 @@ mqtt:
       availability_topic: "hidroponik/produksi/status/LWT"
       payload_available: "Online"
       payload_not_available: "Offline"
+
+    # =================================================
+    # == SENSOR LISTRIK UNTUK INSTANCE 'PRODUKSI'
+    # =================================================
+    - name: "Produksi - Tegangan Listrik"
+      unique_id: hidroponik_produksi_tegangan_v
+      state_topic: "hidroponik/produksi/listrik/tegangan_v"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      value_template: "{{ value | float(1) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Arus Listrik"
+      unique_id: hidroponik_produksi_arus_a
+      state_topic: "hidroponik/produksi/listrik/arus_a"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      value_template: "{{ value | float(3) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Daya Listrik"
+      unique_id: hidroponik_produksi_daya_w
+      state_topic: "hidroponik/produksi/listrik/daya_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      value_template: "{{ value | float(1) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Konsumsi Energi"
+      unique_id: hidroponik_produksi_energi_kwh
+      state_topic: "hidroponik/produksi/listrik/energi_kwh"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing # Penting untuk dasbor energi
+      value_template: "{{ value | float(3) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Frekuensi Listrik"
+      unique_id: hidroponik_produksi_frekuensi_hz
+      state_topic: "hidroponik/produksi/listrik/frekuensi_hz"
+      unit_of_measurement: "Hz"
+      device_class: frequency
+      state_class: measurement
+      value_template: "{{ value | float(1) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+    - name: "Produksi - Power Factor"
+      unique_id: hidroponik_produksi_power_factor
+      state_topic: "hidroponik/produksi/listrik/power_factor"
+      unit_of_measurement: "" # Power factor tidak memiliki unit
+      device_class: power_factor
+      state_class: measurement
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+      
+      # Tambahkan ini di bawah `mqtt: > sensor:` di configuration.yaml Anda
+    - name: "Produksi - pH Air"
+      unique_id: hidroponik_produksi_ph_air
+      state_topic: "hidroponik/produksi/air/ph"
+      icon: mdi:ph
+      value_template: "{{ value | float(2) }}"
+      availability_topic: "hidroponik/produksi/status/LWT"
+      payload_available: "Online"
+      payload_not_available: "Offline"
+
+
 
   binary_sensor:
     - name: "Produksi - Status ESP32"

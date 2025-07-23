@@ -4,16 +4,24 @@ This project is an automation system for hydroponic cultivation using an ESP32, 
 
 ## Table of Contents
 
-*   [Main Features](#main-features)
-*   [Multi-Instance Support](#multi-instance-support)
-*   [Component List](#component-list)
-*   [Wiring Diagram](#wiring-diagram)
-*   [Software Preparation](#software-preparation)
-*   [Home Assistant Configuration](#home-assistant-configuration)
-*   [Usage](#usage)
-*   [Troubleshooting](#troubleshooting)
-*   [Contribution](#contribution)
-*   [License](#license)
+- [ESP32 Hydroponics Automation System Project](#esp32-hydroponics-automation-system-project)
+  - [Table of Contents](#table-of-contents)
+  - [Main Features](#main-features)
+  - [Multi-Instance Support](#multi-instance-support)
+  - [Component List](#component-list)
+  - [System Architecture (Two-Box Setup)](#system-architecture-two-box-setup)
+    - [Inter-Box Connection (LAN Cable)](#inter-box-connection-lan-cable)
+  - [Wiring Diagram](#wiring-diagram)
+    - [Pinout for `Production` Instance](#pinout-for-production-instance)
+    - [Pinout for `Seeding` Instance](#pinout-for-seeding-instance)
+    - [DC 12V 5A Power Supply Connections](#dc-12v-5a-power-supply-connections)
+    - [8-Channel Relay Module Connections](#8-channel-relay-module-connections)
+  - [Software Preparation (PlatformIO)](#software-preparation-platformio)
+  - [Home Assistant Configuration](#home-assistant-configuration)
+  - [Usage](#usage)
+  - [Troubleshooting](#troubleshooting)
+  - [Contribution](#contribution)
+  - [License](#license)
 
 ## Main Features
 
@@ -22,6 +30,8 @@ This project is an automation system for hydroponic cultivation using an ESP32, 
 *   **Water Temperature Monitoring:** Reads water temperature using a DS18B20 sensor.
 *   **Air Temperature & Humidity Monitoring:** Uses a DHT22 sensor to monitor ambient air conditions.
 *   **TDS Monitoring:** Measures the Total Dissolved Solids (nutrient concentration) in the water with temperature compensation.
+*   **pH Monitoring:** Measures the water's pH level using a PH-4502C analog sensor.
+*   **Power Consumption Monitoring:** Measures voltage, current, power, and energy using a PZEM-004T sensor.
 *   **Volume-Based Pump Control:** Precisely controls 3 peristaltic pumps (Nutrient A, Nutrient B, and pH) by volume (ml).
 *   **Notifications & Alerts:** Critical water level warning system with MQTT notifications and a buzzer.
 *   **Home Assistant Integration:** All sensor data and pump controls are fully integrated with Home Assistant via the MQTT protocol.
@@ -47,9 +57,45 @@ This project is designed to manage two types of hydroponic systems from the same
 | DS18B20 Temperature Sensor    | 1                | 0             | For water temperature                              |
 | DHT22 Temp & Humidity Sensor  | 1                | 0             | For air temperature & humidity                     |
 | Analog TDS Meter              | 1                | 0             | For measuring water nutrient concentration         |
+| PH-4502C pH Sensor            | 1                | 0             | For measuring water pH level                       |
+| PZEM-004T v4 Power Sensor     | 1                | 0             | For measuring power consumption                    |
 | Active Buzzer                 | 1                | 0             | For audible alerts                                 |
 | Jumper Wires                  | As needed        | As needed     | Male-to-Male, Female-to-Female, Male-to-Female     |
 | Enclosure Box (optional)      | 1                | 1             | For protection & a neat installation               |
+
+## System Architecture (Two-Box Setup)
+
+To enhance safety and modularity, this system is designed to be split into two separate enclosures:
+
+*   **Box 1 (Controller Box):** Houses the main processing and high-voltage components, kept in a dry area.
+    *   ESP32 Development Board
+    *   PZEM-004T Power Sensor
+    *   Relay Module
+    *   Buzzer
+    *   DHT22 Air Temp & Humidity Sensor
+
+*   **Box 2 (Sensor Box):** Houses all the "wet" sensors that are placed near or in the water reservoir.
+    *   JSN-SR04T Ultrasonic Sensor
+    *   DS18B20 Water Temperature Sensor
+    *   Analog TDS Sensor
+    *   PH-4502C pH Sensor
+
+### Inter-Box Connection (LAN Cable)
+
+A single **Cat5e or Cat6 LAN cable** (up to 2-3 meters) is used to connect the two boxes. This provides a neat and organized way to run all the necessary wires.
+
+| Signal Function        | ESP32 Pin (Box 1) | LAN Cable Wire Color (T568B) | Notes                                    |
+| :--------------------- | :---------------- | :--------------------------- | :--------------------------------------- |
+| **5V Power**           | `5V`              | Brown                        | Power for Ultrasonic Sensor              |
+| **Ground**             | `GND`             | White-Brown                  | **Common Ground** for all sensors        |
+| **3.3V Power**         | `3V3`             | Blue                         | Power for pH, TDS, and DS18B20 sensors   |
+| **Water Temp Data**    | `GPIO 18`         | White-Blue                   | DS18B20 One-Wire data signal             |
+| **Ultrasonic Trigger** | `GPIO 5`          | Orange                       | Ultrasonic trigger signal                |
+| **Ultrasonic Echo**    | `GPIO 4`          | White-Orange                 | Ultrasonic echo signal                   |
+| **pH Data**            | `GPIO 32`         | Green                        | Analog signal from pH sensor             |
+| **TDS Data**           | `GPIO 34`         | White-Green                  | Analog signal from TDS sensor            |
+
+**⚠️ Important Warning:** Extending sensor wires, especially for analog (pH, TDS) and timing-sensitive digital (Ultrasonic, DS18B20) signals, over a distance of 2-3 meters can introduce signal noise and degradation. This can lead to inaccurate or unstable readings. While this setup can work, a more robust professional solution would involve placing a secondary microcontroller (like an ESP8266) in Box 2 to process sensor data locally and transmit it digitally. Proceed with this single-controller setup at your own discretion.
 
 ## Wiring Diagram
 
@@ -63,15 +109,19 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 | :--------------- | :------------------------------ | :---------------------------------------------- |
 | 5                | ULTRASONIC_TRIGGER_PIN (JSN-SR04T Trig) | Ultrasonic Sensor Trigger Signal                |
 | 4                | ULTRASONIC_ECHO_PIN (JSN-SR04T Echo)   | Ultrasonic Sensor Echo Signal                   |
-| 16               | ONE_WIRE_BUS (DS18B20 Data)            | Water Temperature Sensor Data Pin               |
+| 18               | ONE_WIRE_BUS (DS18B20 Data)            | Water Temperature Sensor Data Pin               |
 | 13               | DHT_PIN (DHT22 Data)                   | Air Temperature & Humidity Sensor Data Pin      |
-| 17               | BUZZER_PIN                      | Buzzer Control Pin                              |
+| 19               | BUZZER_PIN                      | Buzzer Control Pin                              |
 | 34               | TDS_SENSOR_PIN                 | Analog signal from TDS sensor adapter board     |
+| 32               | PH_SENSOR_PIN                  | Analog signal from pH sensor adapter board      |
+| 16               | PZEM-004T TX (to ESP32 RX2)     | Power Sensor Data Out                           |
+| 17               | PZEM-004T RX (to ESP32 TX2)     | Power Sensor Data In                            |
 | 25               | PUMP_NUTRISI_A_PIN (Relay IN1)  | Nutrient Pump A Control                         |
 | 26               | PUMP_NUTRISI_B_PIN (Relay IN2)  | Nutrient Pump B Control                         |
 | 27               | PUMP_PH_PIN (Relay IN3)         | pH Pump Control                                 |
 | GND              | All Component GNDs              | System Common Ground                            |
-| 5V (or VIN)      | Relay Module DC+                | Power for Relay Control Circuit                 |
+| 5V (or VIN)      | Relay Module DC+ & PZEM-004T    | Power for Control Circuits                      |
+| 3V3              | pH & TDS Module VCC             | Power for Analog Sensor Modules                 |
 
 ### Pinout for `Seeding` Instance
 

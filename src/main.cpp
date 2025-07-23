@@ -1,104 +1,52 @@
-// =======================================================================
-//                           LIBRARY IMPORTS
-// =======================================================================
 #include "config.h"
-#include <Arduino.h>
-#include <WiFi.h>         // Untuk koneksi Wi-Fi
-
-// Custom modules for handling specific logic
-// Modul kustom untuk menangani logika spesifik
+#include <WiFi.h>
 #include "sensors.h"
 #include "mqtt_handler.h"
 #include "actuators.h"
 
-// =======================================================================
-//                           GLOBAL VARIABLES & OBJECTS
-// =======================================================================
+// --- Global Variables ---
 #if HYDROPONIC_INSTANCE == 1
-// Struct tunggal untuk menampung semua pembacaan sensor
-SensorValues currentSensorValues;
+static SensorValues currentSensorValues;
 #endif
 
-// Variabel untuk waktu terakhir publikasi/aksi
-// Variables for the last time of publication/action
-unsigned long lastSensorPublishTime = 0;
-unsigned long lastHeartbeatTime = 0;
+static unsigned long lastSensorPublishTime = 0;
+static unsigned long lastHeartbeatTime = 0;
 
-// =======================================================================
-//                           FUNCTION DECLARATIONS
-// =======================================================================
-void setupWifi();
+// --- Forward Declarations ---
+void connectToWifi();
 
-// =======================================================================
-//                           FUNCTION IMPLEMENTATIONS
-// =======================================================================
-void setupWifi()
-{
-  if (WiFi.status() == WL_CONNECTED)
-  {
-    return;
-  }
-  LOG_PRINTF("\n[WiFi] Attempting to connect to SSID: '%s'\n", WIFI_SSID);
-
-  // Memulai koneksi WiFi dengan DHCP
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < MAX_RECONNECT_ATTEMPTS) {
-    LOG_PRINTF("[WiFi] Connection attempt %d... Status: %d\n", attempts + 1, WiFi.status());
-    delay(1000);
-    attempts++;
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    LOG_PRINTLN("\nWiFi Connected!");
-    LOG_PRINT("IP Address: ");
-    LOG_PRINTLN(WiFi.localIP());
-  } else {
-    LOG_PRINTLN("\nFailed to connect to WiFi. Restarting ESP32...");
-    delay(5000);
-    ESP.restart();
-  }
-}
-
-void setup()
-{
+void setup() {
   Serial.begin(115200);
-  LOG_PRINTLN("--- ESP32 Hydroponic Automation System ---");
-  LOG_PRINTLN("Inisialisasi sistem... / System Initialization...");
-
-  LOG_PRINTLN("\n--- Verifying Credentials ---");
-  LOG_PRINTF("Read WIFI_SSID:     [%s]\n", WIFI_SSID);
-  LOG_PRINTF("Read WIFI_PASSWORD: [%s]\n", WIFI_PASSWORD); // Hanya untuk debugging
-  LOG_PRINTF("Read MQTT_USER:     [%s]\n", MQTT_USERNAME);
-  LOG_PRINTF("Read MQTT_PASS:     [%s]\n", MQTT_PASSWORD); // Hanya untuk debugging
-  LOG_PRINTLN("---------------------------\n");
+  LOG_PRINTLN("\n--- ESP32 Hydroponic System Initializing ---");
 
 #if HYDROPONIC_INSTANCE == 1
   sensors_init();
 #endif
   actuators_init();
-  setupWifi();
+  connectToWifi();
   mqtt_init();
 
-  LOG_PRINTLN("Setup Complete. Memulai Loop... / Setup Complete. Starting Loop...");
+  LOG_PRINTLN("\n--- System Initialization Complete. Starting main loop. ---\n");
 }
 
-void loop()
-{
+void loop() {
   unsigned long currentTime = millis();
 
+  // Ensure WiFi is connected before proceeding
   if (WiFi.status() != WL_CONNECTED) {
-    LOG_PRINTLN("[WiFi] Disconnected! Attempting to reconnect...");
-    setupWifi();
+    connectToWifi();
   }
 
+  // Run the loop functions for each module
   mqtt_loop();
   actuators_loop();
 
+  // --- Timed Actions ---
 #if HYDROPONIC_INSTANCE == 1
+  // Periodically read sensors and publish the data
   if (currentTime - lastSensorPublishTime >= SENSOR_PUBLISH_INTERVAL_MS) {
     lastSensorPublishTime = currentTime;
+
     sensors_read_all(currentSensorValues);
     mqtt_publish_sensor_data(currentSensorValues);
     actuators_update_alert_status(currentSensorValues);
@@ -106,14 +54,37 @@ void loop()
   }
 #endif
 
+  // Periodically send a heartbeat to show the device is alive
   if (currentTime - lastHeartbeatTime >= HEARTBEAT_INTERVAL_MS) {
     lastHeartbeatTime = currentTime;
-    if (mqtt_is_connected())
-      mqtt_publish_heartbeat();
-    else {
-      LOG_PRINTLN("[Heartbeat] Skipping heartbeat: MQTT not connected.");
-    }
+    mqtt_publish_heartbeat();
+  }
+}
+
+/**
+ * @brief Connects to WiFi with a timeout and handles failure by restarting.
+ */
+void connectToWifi() {
+  if (WiFi.status() == WL_CONNECTED) {
+    return;
   }
 
-  delay(1); // Delay singkat untuk stabilitas dan yield ke RTOS
+  LOG_PRINTF("\n[WiFi] Connecting to SSID: %s\n", WIFI_SSID);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < MAX_RECONNECT_ATTEMPTS) {
+    LOG_PRINT(".");
+    delay(WIFI_RECONNECT_DELAY_MS);
+    attempts++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    LOG_PRINTLN("\n[WiFi] Connected!");
+    LOG_PRINTF("[WiFi] IP Address: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    LOG_PRINTLN("\n[WiFi] Failed to connect after multiple attempts. Restarting...");
+    delay(1000);
+    ESP.restart();
+  }
 }

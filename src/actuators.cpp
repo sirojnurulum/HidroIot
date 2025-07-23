@@ -1,25 +1,25 @@
 #include "actuators.h"
 #include "config.h"
 #include "mqtt_handler.h" // For publishing alerts and state
+#include <stdlib.h>       // For atof()
+#include <strings.h>      // For strcasecmp()
 
 // --- Module-Private (Static) Variables ---
 
 /**
  * @struct Pump
  * @brief Holds all state and configuration for a single peristaltic pump.
- *        Menyimpan semua status dan konfigurasi untuk satu pompa peristaltik.
  */
 struct Pump {
-  const int pin;              // GPIO pin number / Nomor pin GPIO
-  const char* name;           // Human-readable name / Nama yang mudah dibaca
-  const std::string commandTopic; // MQTT topic to control this pump / Topik MQTT untuk mengontrol pompa ini
-  const std::string stateTopic;   // MQTT topic to report state / Topik MQTT untuk melaporkan status
-  bool isOn;                  // Current state (on/off) / Status saat ini (on/off)
-  unsigned long stopTime;     // Time (in millis) when the pump should stop / Waktu (dalam milidetik) pompa harus berhenti
+  const int pin;
+  const char* name;
+  const std::string commandTopic;
+  const std::string stateTopic;
+  bool isOn;
+  unsigned long stopTime;
 };
 
 // Create an array of all pumps for easy, scalable management
-// Buat array dari semua pompa untuk manajemen yang mudah dan skalabel
 #if HYDROPONIC_INSTANCE == 1 // Produksi
 static Pump pumps[] = {
   {PUMP_NUTRISI_A_PIN, "Nutrisi A", COMMAND_TOPIC_PUMP_A, STATE_TOPIC_PUMP_A, false, 0},
@@ -32,45 +32,32 @@ static Pump pumps[] = {
 };
 #endif
 // Calculate the number of pumps automatically
-// Hitung jumlah pompa secara otomatis
-const int NUM_PUMPS = sizeof(pumps) / sizeof(pumps[0]);
+static const int NUM_PUMPS = sizeof(pumps) / sizeof(pumps[0]);
 
 #if HYDROPONIC_INSTANCE == 1
-// Variabel ini hanya untuk instance produksi
+// State variables specific to the 'produksi' instance
 static bool isWaterLevelAlertActive = false;
-
-// State for auto-dosing logic to prevent rapid, repeated dosing
 static unsigned long lastAutoDoseCheckTime = 0;
 
-// State machine for sequential A/B nutrient auto-dosing
-enum AutoDoseState {
-  IDLE,
-  WAITING_FOR_B_DOSE
-};
+enum AutoDoseState { IDLE, WAITING_FOR_B_DOSE };
 static AutoDoseState autoDoseState = IDLE;
 
-// System operating mode, defaults to NUTRITION on startup
-enum SystemMode {
-  NUTRITION, // Full functionality with auto-dosing
-  CLEANER    // Auto-dosing is disabled for system flushing
-};
+enum SystemMode { NUTRITION, CLEANER };
 static SystemMode currentSystemMode = NUTRITION;
 #endif
-
 
 // --- Forward Declarations for Static Functions ---
 static void control_pump(Pump& pump, float volume_ml);
 static void control_pump_for_duration(Pump& pump, unsigned long duration_ms);
 static bool are_any_pumps_running();
 
-/**
- * @brief Menginisialisasi pin aktuator, mengatur pinMode dan memastikan semua OFF saat startup.
- */
+// --- Public Function Implementations ---
+
 void actuators_init() {
-  LOG_PRINTLN("Initializing actuators...");
+  LOG_PRINTLN("[Actuators] Initializing...");
   for (int i = 0; i < NUM_PUMPS; i++) {
     pinMode(pumps[i].pin, OUTPUT);
-    digitalWrite(pumps[i].pin, LOW); // Ensure all pumps are OFF at startup
+    digitalWrite(pumps[i].pin, LOW); // Ensure all pumps are OFF
   }
 #if HYDROPONIC_INSTANCE == 1
   pinMode(BUZZER_PIN, OUTPUT);
@@ -78,9 +65,6 @@ void actuators_init() {
 #endif
 }
 
-/**
- * @brief Loop untuk aktuator, menangani logika non-blocking seperti menghentikan pompa berwaktu.
- */
 void actuators_loop() {
   unsigned long currentTime = millis();
   for (int i = 0; i < NUM_PUMPS; i++) {
@@ -88,9 +72,9 @@ void actuators_loop() {
     if (pumps[i].isOn && pumps[i].stopTime > 0 && currentTime >= pumps[i].stopTime) {
       digitalWrite(pumps[i].pin, LOW);
       pumps[i].isOn = false;
-      pumps[i].stopTime = 0; // Clear the stop time
-      LOG_PRINTF("[Pump Control] Pump %s finished pumping.\n", pumps[i].name);
-      mqtt_publish_state(pumps[i].stateTopic.c_str(), "OFF", true);
+      pumps[i].stopTime = 0;
+      LOG_PRINTF("[Pump] %s finished timed run.\n", pumps[i].name);
+      mqtt_publish_state(pumps[i].stateTopic, "OFF", true);
 
 #if HYDROPONIC_INSTANCE == 1
       // If this was part of an auto-dosing sequence, trigger the next part
@@ -99,37 +83,34 @@ void actuators_loop() {
         if (!are_any_pumps_running()) {
           control_pump(pumps[1], DOSING_AMOUNT_ML); // Dose Nutrient B
         }
-        autoDoseState = IDLE; // The sequence is now complete or aborted
+        autoDoseState = IDLE; // The sequence is now complete
       }
 #endif
     }
   }
 }
 
-/**
- * @brief Menangani perintah pompa dari MQTT. Mengurai volume atau perintah OFF.
- */
-void actuators_handle_pump_command(const char* topic, const String& command) {
+void actuators_handle_pump_command(const char* topic, const char* command) {
   for (int i = 0; i < NUM_PUMPS; i++) {
-    if (topic == pumps[i].commandTopic) {
-      if (command == "OFF") {
+    if (strcmp(topic, pumps[i].commandTopic.c_str()) == 0) {
+      // Use case-insensitive compare for the "OFF" command
+      if (strcasecmp(command, "OFF") == 0) {
         digitalWrite(pumps[i].pin, LOW);
         pumps[i].isOn = false;
         pumps[i].stopTime = 0; // Cancel any timed run
-        LOG_PRINTF("[Pump Control] Pump %s force stopped.\n", pumps[i].name);
-        mqtt_publish_state(pumps[i].stateTopic.c_str(), "OFF", true);
+        LOG_PRINTF("[Pump] %s force stopped via MQTT.\n", pumps[i].name);
+        mqtt_publish_state(pumps[i].stateTopic, "OFF", true);
 #if HYDROPONIC_INSTANCE == 2
-      } else if (topic == COMMAND_TOPIC_PUMP_SIRAM) {
-        // This is the watering pump, command is duration in seconds
-        float duration_s = command.toFloat();
+      } else if (strcmp(topic, COMMAND_TOPIC_PUMP_SIRAM.c_str()) == 0) {
+        // For the watering pump, command is duration in seconds
+        float duration_s = atof(command);
         if (duration_s > 0) {
-          unsigned long duration_ms = duration_s * 1000;
-          control_pump_for_duration(pumps[i], duration_ms);
+          control_pump_for_duration(pumps[i], duration_s * 1000);
         }
 #endif
       } else {
         // Otherwise, treat the command as a volume in ml
-        float volume_ml = command.toFloat();
+        float volume_ml = atof(command);
         if (volume_ml > 0) {
           control_pump(pumps[i], volume_ml);
         }
@@ -139,110 +120,83 @@ void actuators_handle_pump_command(const char* topic, const String& command) {
   }
 }
 
+void actuators_publish_states() {
+  LOG_PRINTLN("[Actuators] Publishing initial states to MQTT...");
+  for (int i = 0; i < NUM_PUMPS; i++) {
+    mqtt_publish_state(pumps[i].stateTopic, pumps[i].isOn ? "ON" : "OFF", true);
+  }
 #if HYDROPONIC_INSTANCE == 1
-/**
- * @brief Memproses perintah MQTT yang masuk untuk mengubah mode sistem.
- */
-void actuators_handle_mode_command(const String& command) {
-  String upperCmd = command;
-  upperCmd.toUpperCase();
+  mqtt_publish_state(STATE_TOPIC_SYSTEM_MODE, currentSystemMode == NUTRITION ? "NUTRITION" : "CLEANER", true);
+#endif
+}
 
+#if HYDROPONIC_INSTANCE == 1
+void actuators_handle_mode_command(const char* command) {
   bool modeChanged = false;
   const char* newModeStr = nullptr;
 
-  if (upperCmd == "NUTRITION") {
+  if (strcasecmp(command, "NUTRITION") == 0) {
     if (currentSystemMode != NUTRITION) {
       currentSystemMode = NUTRITION;
       modeChanged = true;
       newModeStr = "NUTRITION";
     }
-  } else if (upperCmd == "CLEANER") {
+  } else if (strcasecmp(command, "CLEANER") == 0) {
     if (currentSystemMode != CLEANER) {
       currentSystemMode = CLEANER;
       modeChanged = true;
       newModeStr = "CLEANER";
     }
   } else {
-    LOG_PRINTF("[Mode] Received unknown mode command: %s\n", command.c_str());
+    LOG_PRINTF("[Mode] WARN: Received unknown mode command: %s\n", command);
     return;
   }
 
   if (modeChanged) {
     LOG_PRINTF("[Mode] System mode changed to %s\n", newModeStr);
-    mqtt_publish_state(STATE_TOPIC_SYSTEM_MODE.c_str(), newModeStr, true);
+    mqtt_publish_state(STATE_TOPIC_SYSTEM_MODE, newModeStr, true);
   } else {
-    LOG_PRINTF("[Mode] System already in %s mode.\n", upperCmd.c_str());
+    LOG_PRINTF("[Mode] System already in %s mode.\n", command);
   }
 }
 
-/**
- * @brief Memperbarui status peringatan (buzzer & MQTT) berdasarkan level air.
- */
 void actuators_update_alert_status(const SensorValues& values) {
-  bool shouldAlertBeActive = false;
-  if (isnan(values.waterLevelCm)) {
-    shouldAlertBeActive = true;
-  } else if (values.waterLevelCm <= WATER_LEVEL_CRITICAL_CM) {
-    shouldAlertBeActive = true;
-  }
+  bool shouldAlertBeActive = isnan(values.waterLevelCm) || (values.waterLevelCm <= WATER_LEVEL_CRITICAL_CM);
 
   if (shouldAlertBeActive && !isWaterLevelAlertActive) {
     isWaterLevelAlertActive = true;
-    char alertMessage[60];
+    char alertMessage[80];
     if (isnan(values.waterLevelCm)) {
-      strcpy(alertMessage, "ALERT: Level air tidak terdeteksi atau di luar jangkauan!");
+      strcpy(alertMessage, "ALERT: Water level sensor reading is invalid!");
     } else {
-      sprintf(alertMessage, "ALERT: Level air kritis! %.1f cm", values.waterLevelCm);
+      sprintf(alertMessage, "ALERT: Water level is critical! Current: %.1f cm", values.waterLevelCm);
     }
+    LOG_PRINTF(">>> ALERT: %s <<<\n", alertMessage);
     mqtt_publish_alert(alertMessage);
-    Serial.printf(">>> Peringatan: %s <<<\n", alertMessage);
   } else if (!shouldAlertBeActive && isWaterLevelAlertActive) {
     isWaterLevelAlertActive = false;
-    mqtt_publish_alert("Level air normal kembali.");
-    Serial.println("Level air kembali normal.");
+    LOG_PRINTLN(">>> INFO: Water level has returned to normal. <<<");
+    mqtt_publish_alert("OK: Water level is normal.");
   }
 
   digitalWrite(BUZZER_PIN, isWaterLevelAlertActive ? HIGH : LOW);
 }
-#endif
 
-/**
- * @brief Mempublikasikan status awal semua aktuator ke MQTT.
- */
-void actuators_publish_states() {
-  LOG_PRINTLN("[MQTT] Publishing initial actuator states...");
-  for (int i = 0; i < NUM_PUMPS; i++) {
-    mqtt_publish_state(pumps[i].stateTopic.c_str(), pumps[i].isOn ? "ON" : "OFF", true);
-  }
-#if HYDROPONIC_INSTANCE == 1
-  // Publish initial system mode
-  mqtt_publish_state(STATE_TOPIC_SYSTEM_MODE.c_str(), currentSystemMode == NUTRITION ? "NUTRITION" : "CLEANER", true);
-#endif
-}
-
-#if HYDROPONIC_INSTANCE == 1
-/**
- * @brief Memeriksa nilai sensor dan melakukan dosis nutrisi otomatis jika diperlukan.
- */
 void actuators_auto_dose_nutrients(const SensorValues& values) {
   unsigned long currentTime = millis();
 
-  if (currentSystemMode != NUTRITION) {
-    return;
-  }
-
-  if (currentTime - lastAutoDoseCheckTime < AUTO_DOSING_CHECK_INTERVAL_MS) {
-    return;
-  }
+  if (currentSystemMode != NUTRITION) return;
+  if (currentTime - lastAutoDoseCheckTime < AUTO_DOSING_CHECK_INTERVAL_MS) return;
+  
   lastAutoDoseCheckTime = currentTime;
 
   if (are_any_pumps_running() || autoDoseState != IDLE) {
-    LOG_PRINTLN("[Auto-Dose] Skipping check, a pump is running or a sequence is in progress.");
+    LOG_PRINTLN("[Auto-Dose] Skipping check: a pump is running or a sequence is in progress.");
     return;
   }
 
   if (isnan(values.tdsPpm)) {
-    LOG_PRINTLN("[Auto-Dose] Skipping check, TDS value is invalid (NAN).");
+    LOG_PRINTLN("[Auto-Dose] Skipping check: TDS value is invalid (NAN).");
     return;
   }
 
@@ -258,53 +212,32 @@ void actuators_auto_dose_nutrients(const SensorValues& values) {
 
 // --- Static (Private) Function Implementations ---
 
-/**
- * @brief Helper function to check if any pump is currently running.
- */
 static bool are_any_pumps_running() {
   for (int i = 0; i < NUM_PUMPS; i++) {
-    if (pumps[i].isOn) {
-      return true;
-    }
+    if (pumps[i].isOn) return true;
   }
   return false;
 }
 
-/**
- * @brief Activates a specific pump for a calculated duration based on volume.
- */
 static void control_pump(Pump& pump, float volume_ml) {
   if (volume_ml <= 0) return;
-
   if (are_any_pumps_running()) {
-    LOG_PRINTF("[Pump Control] Cannot start pump %s, another pump is already running.\n", pump.name);
+    LOG_PRINTF("[Pump] Cannot start %s, another pump is running.\n", pump.name);
     return;
   }
-
   unsigned long duration_ms = volume_ml * PUMP_MS_PER_ML;
-  LOG_PRINTF("[Pump Control] Pumping %.1f ml from %s for %lu ms.\n", volume_ml, pump.name, duration_ms);
-  
-  pump.stopTime = millis() + duration_ms;
-  digitalWrite(pump.pin, HIGH);
-  pump.isOn = true;
-  mqtt_publish_state(pump.stateTopic.c_str(), "ON", true);
+  control_pump_for_duration(pump, duration_ms);
 }
 
-/**
- * @brief Activates a specific pump for a given duration.
- */
 static void control_pump_for_duration(Pump& pump, unsigned long duration_ms) {
   if (duration_ms <= 0) return;
-
   if (are_any_pumps_running()) {
-    LOG_PRINTF("[Pump Control] Cannot start pump %s, another pump is already running.\n", pump.name);
+    LOG_PRINTF("[Pump] Cannot start %s, another pump is running.\n", pump.name);
     return;
   }
-
-  LOG_PRINTF("[Pump Control] Running %s for %lu ms.\n", pump.name, duration_ms);
-  
+  LOG_PRINTF("[Pump] Running %s for %lu ms.\n", pump.name, duration_ms);
   pump.stopTime = millis() + duration_ms;
   digitalWrite(pump.pin, HIGH);
   pump.isOn = true;
-  mqtt_publish_state(pump.stateTopic.c_str(), "ON", true);
+  mqtt_publish_state(pump.stateTopic, "ON", true);
 }

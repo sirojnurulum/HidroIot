@@ -36,8 +36,7 @@ void sensors_init() {
   
   // Initialize the PZEM object, providing the Serial port AND the RX/TX pins.
   // This matches the library's constructor and is the correct way to instantiate it.
-  // RX: 16, TX: 17
-  pzem = new PZEM004Tv30(Serial2, 16, 17);
+  pzem = new PZEM004Tv30(Serial2, PZEM_RX_PIN, PZEM_TX_PIN);
   analogReadResolution(12); // Set ADC resolution to 12-bit for TDS sensor
 }
 

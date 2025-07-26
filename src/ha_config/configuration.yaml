@@ -12,7 +12,7 @@ scene: !include scenes.yaml
 
 homeassistant:
   # URL eksternal (HTTPS) yang akan digunakan untuk mengakses Home Assistant dari luar
-  external_url: "https://ha.o-m-b.id" 
+  external_url: "https://your-domain.com" 
   # URL internal (HTTP) yang digunakan Home Assistant untuk mengakses dirinya sendiri di jaringan lokal VPS
   internal_url: "http://localhost:8123" 
 
@@ -150,7 +150,6 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
       
-      # Tambahkan ini di bawah `mqtt: > sensor:` di configuration.yaml Anda
     - name: "Produksi - pH Air"
       unique_id: hidroponik_produksi_ph_air
       state_topic: "hidroponik/produksi/air/ph"

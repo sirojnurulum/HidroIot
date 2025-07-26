@@ -72,6 +72,8 @@ extern const int PUMP_NUTRISI_A_PIN;
 extern const int PUMP_NUTRISI_B_PIN;
 extern const int PUMP_PH_PIN;
 extern const int PH_SENSOR_PIN;
+extern const int PZEM_RX_PIN; // ESP32 RX2, connected to PZEM TX
+extern const int PZEM_TX_PIN; // ESP32 TX2, connected to PZEM RX
 
 // SYSTEM CONFIG
 extern const int ULTRASONIC_MAX_DISTANCE_CM;

@@ -30,6 +30,8 @@ const int PUMP_NUTRISI_A_PIN = 25;
 const int PUMP_NUTRISI_B_PIN = 26;
 const int PUMP_PH_PIN = 27;
 const int PH_SENSOR_PIN = 32;
+const int PZEM_RX_PIN = 16; // ESP32 RX2, terhubung ke TX PZEM
+const int PZEM_TX_PIN = 17; // ESP32 TX2, terhubung ke RX PZEM
 
 // SYSTEM CONFIG
 const int ULTRASONIC_MAX_DISTANCE_CM = 400;

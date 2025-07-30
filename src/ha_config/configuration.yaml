@@ -1,5 +1,21 @@
 # Loads default set of integrations. Do not remove.
-default_config:
+# We are replacing 'default_config:' with a minimal set of essential integrations
+# to keep the system lean and remove unused items like 'Media' or 'Sun'.
+
+# Core integrations for UI, automations, and helpers
+frontend:
+automation:
+script:
+input_boolean:
+input_datetime:
+input_number:
+
+# Core integrations for system operation and debugging
+system_health:
+history:
+logbook:
+config:
+update:
 
 # Load frontend themes from the themes folder
 frontend:
@@ -21,6 +37,8 @@ lovelace:
   # so they are loaded before the UI is rendered.
   resources:
     - url: /hacsfiles/button-card/button-card.js
+      type: module
+    - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js
       type: module
 
 # All other configurations (mqtt, input_number, script, automation, etc.)

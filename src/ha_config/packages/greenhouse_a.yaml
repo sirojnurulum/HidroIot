@@ -20,6 +20,15 @@ input_number:
     unit_of_measurement: "ml"
     icon: mdi:beaker-outline
 
+  greenhouse_a_tds_target_min:
+    name: "Greenhouse A: Target TDS Minimum"
+    initial: 800
+    min: 400
+    max: 1500
+    step: 10
+    unit_of_measurement: "ppm"
+    icon: mdi:arrow-down-bold-box-outline
+
   greenhouse_a_pompa_nutrisi_b_volume:
     name: "Greenhouse A: Volume Nutrisi B"
     initial: 20
@@ -37,6 +46,14 @@ input_number:
     step: 1
     unit_of_measurement: "ml"
     icon: mdi:ph
+
+  greenhouse_a_ph_target_max:
+    name: "Greenhouse A: Target pH Maksimum"
+    initial: 6.5
+    min: 5.0
+    max: 8.0
+    step: 0.1
+    icon: mdi:arrow-up-bold-box-outline
 
   greenhouse_a_pompa_siram_durasi:
     name: "Greenhouse A: Durasi Penyiraman"
@@ -66,6 +83,10 @@ input_boolean:
   greenhouse_a_penyiraman_otomatis_terjadwal:
     name: "Greenhouse A: Penyiraman Otomatis"
     icon: mdi:sprinkler-variant
+
+  greenhouse_a_auto_dosing_enabled:
+    name: "Greenhouse A: Auto-Dosing pH & TDS"
+    icon: mdi:auto-fix
 
 # =================================================
 # == SCRIPTS
@@ -132,6 +153,79 @@ automation:
     action:
       - service: script.greenhouse_a_siram_tanaman
         data: {}
+    mode: single
+
+  - id: 'greenhouse_a_otomatisasi_auto_dosing_tds'
+    alias: "Greenhouse A: Auto-Dosing Nutrisi Jika TDS Rendah"
+    description: "Menambahkan nutrisi A & B jika TDS turun di bawah target."
+    trigger:
+      # Memicu ketika nilai sensor TDS berubah dan menjadi di bawah target
+      - platform: numeric_state
+        entity_id: sensor.greenhouse_a_tds_air
+        below: input_number.greenhouse_a_tds_target_min
+    condition:
+      # Hanya jalankan jika automasi diaktifkan
+      - condition: state
+        entity_id: input_boolean.greenhouse_a_auto_dosing_enabled
+        state: 'on'
+    action:
+      # Panggil skrip untuk dosis nutrisi A, lalu B
+      - service: script.greenhouse_a_dosis_nutrisi_a
+      - delay: '00:01:00' # Tunggu 1 menit agar nutrisi A tercampur
+      - service: script.greenhouse_a_dosis_nutrisi_b
+    # Mencegah penumpukan jika TDS berfluktuasi.
+    # Setelah berjalan, automasi ini tidak akan berjalan lagi sampai kondisi menjadi salah (TDS naik di atas target) dan kemudian menjadi benar lagi.
+    mode: single
+
+  - id: 'greenhouse_a_otomatisasi_auto_dosing_ph'
+    alias: "Greenhouse A: Auto-Dosing pH Down Jika pH Tinggi"
+    description: "Menambahkan larutan pH down jika pH naik di atas target."
+    trigger:
+      # Memicu ketika nilai sensor pH berubah dan menjadi di atas target
+      - platform: numeric_state
+        entity_id: sensor.greenhouse_a_ph_air
+        above: input_number.greenhouse_a_ph_target_max
+    condition:
+      # Hanya jalankan jika automasi diaktifkan
+      - condition: state
+        entity_id: input_boolean.greenhouse_a_auto_dosing_enabled
+        state: 'on'
+    action:
+      - service: script.greenhouse_a_dosis_ph
+    # Mencegah penumpukan jika pH berfluktuasi.
+    # Setelah berjalan, automasi ini tidak akan berjalan lagi sampai kondisi menjadi salah (pH turun di bawah target) dan kemudian menjadi benar lagi.
+    mode: single
+
+  - id: 'greenhouse_a_otomatisasi_auto_refill_start'
+    alias: "Greenhouse A: Mulai Pengisian Tandon Jika Air Rendah"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.greenhouse_a_level_air
+        below: input_number.greenhouse_a_refill_target_low
+    condition:
+      - condition: state
+        entity_id: input_boolean.greenhouse_a_auto_refill_enabled
+        state: 'on'
+    action:
+      - service: switch.turn_on
+        target:
+          entity_id: switch.greenhouse_a_katup_pengisian_tandon
+    mode: single
+
+  - id: 'greenhouse_a_otomatisasi_auto_refill_stop'
+    alias: "Greenhouse A: Hentikan Pengisian Tandon Jika Air Penuh"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.greenhouse_a_level_air
+        above: input_number.greenhouse_a_refill_target_high
+    condition:
+      - condition: state
+        entity_id: switch.greenhouse_a_katup_pengisian_tandon
+        state: 'on'
+    action:
+      - service: switch.turn_off
+        target:
+          entity_id: switch.greenhouse_a_katup_pengisian_tandon
     mode: single
 
 # =================================================

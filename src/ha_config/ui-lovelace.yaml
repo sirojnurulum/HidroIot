@@ -14,97 +14,62 @@ views:
     cards:
       - type: vertical-stack
         cards:
-          # --- Card 1: Status & Key Metrics ---
-          - type: entities
-            title: Status Utama Greenhouse A
-            show_header_toggle: false
+          # --- Card 0: Main Title ---
+          - type: markdown
+            content: >
+              # Dasbor Pemantauan Greenhouse A
+            card_mod:
+              style: |
+                ha-card {
+                  background: none;
+                  border: none;
+                  box-shadow: none;
+                }
+          # --- Card 1: Status & Key Metrics (Visual) ---
+          - type: horizontal-stack
+            cards:
+              - type: custom:mini-graph-card
+                name: Level Air
+                icon: mdi:waves-arrow-up
+                entities:
+                  - sensor.greenhouse_a_level_air
+                show:
+                  graph: sparkline
+                  icon_adaptive_color: true
+              - type: custom:mini-graph-card
+                name: Suhu Air
+                icon: mdi:coolant-temperature
+                entities:
+                  - sensor.greenhouse_a_suhu_air
+                show:
+                  graph: sparkline
+                  icon_adaptive_color: true
+          - type: horizontal-stack
+            cards:
+              - type: custom:mini-graph-card
+                name: TDS
+                icon: mdi:water-opacity
+                entities:
+                  - sensor.greenhouse_a_tds_air
+                show:
+                  graph: sparkline
+              - type: custom:mini-graph-card
+                name: pH
+                icon: mdi:ph
+                entities:
+                  - sensor.greenhouse_a_ph_air
+                show:
+                  graph: sparkline
+          - type: glance
+            title: Status Kontroler
+            show_name: false
             entities:
               - entity: binary_sensor.greenhouse_a_status_esp32
-                name: Status Kontroler
-              - entity: sensor.greenhouse_a_level_air
-                name: Level Air
-              - entity: sensor.greenhouse_a_suhu_air
-                name: Suhu Air
-              - entity: sensor.greenhouse_a_tds_air
-                name: TDS Air
-              - entity: sensor.greenhouse_a_ph_air
-                name: pH Air
-
-          # --- Card 2: Pump Controls ---
-          - type: grid
-            title: Kontrol Pompa Manual
-            columns: 2
-            square: false
-            cards:
-              # --- Tombol Pompa Nutrisi A ---
-              - type: custom:button-card
-                entity: script.greenhouse_a_dosis_nutrisi_a
-                name: Dosis Nutrisi A
-                icon: mdi:beaker-plus-outline
-                tap_action:
-                  action: call-service
-                  service: script.turn_on
-                  service_data:
-                    entity_id: script.greenhouse_a_dosis_nutrisi_a
-                state:
-                  - value: 'on'
-                    spin: true
-                    color: var(--paper-item-icon-active-color) # Warna kuning/amber
-
-              # --- Tombol Pompa Nutrisi B ---
-              - type: custom:button-card
-                entity: script.greenhouse_a_dosis_nutrisi_b
-                name: Dosis Nutrisi B
-                icon: mdi:beaker-plus-outline
-                tap_action:
-                  action: call-service
-                  service: script.turn_on
-                  service_data:
-                    entity_id: script.greenhouse_a_dosis_nutrisi_b
-                state:
-                  - value: 'on'
-                    spin: true
-                    color: var(--paper-item-icon-active-color)
-
-              # --- Tombol Pompa pH ---
-              - type: custom:button-card
-                entity: script.greenhouse_a_dosis_ph
-                name: Dosis pH
-                icon: mdi:ph
-                tap_action:
-                  action: call-service
-                  service: script.turn_on
-                  service_data:
-                    entity_id: script.greenhouse_a_dosis_ph
-                state:
-                  - value: 'on'
-                    spin: true
-                    color: var(--paper-item-icon-active-color)
-
-              # --- Tombol Pompa Siram ---
-              - type: custom:button-card
-                entity: script.greenhouse_a_siram_tanaman
-                name: Siram Tanaman
-                icon: mdi:sprinkler
-                tap_action:
-                  action: call-service
-                  service: script.turn_on
-                  service_data:
-                    entity_id: script.greenhouse_a_siram_tanaman
-                state:
-                  - value: 'on'
-                    spin: true
-                    color: var(--paper-item-icon-active-color)
-
-          # --- Card 3: Automation Settings ---
-          - type: entities
-            title: Pengaturan Automasi Penyiraman
-            show_header_toggle: false
-            entities:
-              - entity: input_boolean.greenhouse_a_penyiraman_otomatis_terjadwal
-              - entity: input_datetime.greenhouse_a_penyiraman_waktu_mulai
-              - entity: input_datetime.greenhouse_a_penyiraman_waktu_selesai
-              - entity: input_number.greenhouse_a_pompa_siram_durasi
+                name: Online/Offline
+              - entity: sensor.greenhouse_a_suhu_udara
+                name: Suhu Udara
+              - entity: sensor.greenhouse_a_kelembaban_udara
+                name: Kelembaban
 
           # --- Card 4: Power Metrics ---
           - type: glance
@@ -126,3 +91,122 @@ views:
                 name: Frekuensi
               - entity: sensor.greenhouse_a_power_factor
                 name: Power Factor
+
+  # ==================================
+  # == View/Tab for Manual Controls
+  # ==================================
+  - title: Kontrol Manual
+    path: kontrol-manual
+    icon: mdi:pump
+    cards:
+      - type: vertical-stack
+        cards:
+          # --- Card for Manual Controls & Dosing ---
+          - type: vertical-stack
+            cards:
+              - type: grid
+                title: Kontrol & Dosis Manual Greenhouse A
+                columns: 2
+                square: false
+                cards:
+                  # --- Tombol Pompa Nutrisi A ---
+                  - type: custom:button-card
+                    entity: script.greenhouse_a_dosis_nutrisi_a
+                    name: Dosis Nutrisi A
+                    icon: mdi:beaker-plus-outline
+                    tap_action:
+                      action: call-service
+                      service: script.turn_on
+                      service_data:
+                        entity_id: script.greenhouse_a_dosis_nutrisi_a
+                    state:
+                      - value: 'on'
+                        spin: true
+                        color: var(--paper-item-icon-active-color) # Warna kuning/amber
+
+                  # --- Tombol Pompa Nutrisi B ---
+                  - type: custom:button-card
+                    entity: script.greenhouse_a_dosis_nutrisi_b
+                    name: Dosis Nutrisi B
+                    icon: mdi:beaker-plus-outline
+                    tap_action:
+                      action: call-service
+                      service: script.turn_on
+                      service_data:
+                        entity_id: script.greenhouse_a_dosis_nutrisi_b
+                    state:
+                      - value: 'on'
+                        spin: true
+                        color: var(--paper-item-icon-active-color)
+
+                  # --- Tombol Pompa pH ---
+                  - type: custom:button-card
+                    entity: script.greenhouse_a_dosis_ph
+                    name: Dosis pH
+                    icon: mdi:ph
+                    tap_action:
+                      action: call-service
+                      service: script.turn_on
+                      service_data:
+                        entity_id: script.greenhouse_a_dosis_ph
+                    state:
+                      - value: 'on'
+                        spin: true
+                        color: var(--paper-item-icon-active-color)
+
+                  # --- Tombol Pompa Siram ---
+                  - type: custom:button-card
+                    entity: script.greenhouse_a_siram_tanaman
+                    name: Siram Tanaman
+                    icon: mdi:sprinkler
+                    tap_action:
+                      action: call-service
+                      service: script.turn_on
+                      service_data:
+                        entity_id: script.greenhouse_a_siram_tanaman
+                    state:
+                      - value: 'on'
+                        spin: true
+                        color: var(--paper-item-icon-active-color)
+              - type: entities
+                title: Pengaturan Kontrol Manual
+                entities:
+                  - entity: input_number.greenhouse_a_pompa_nutrisi_a_volume
+                  - entity: input_number.greenhouse_a_pompa_nutrisi_b_volume
+                  - entity: input_number.greenhouse_a_pompa_ph_volume
+                  - entity: input_number.greenhouse_a_pompa_siram_durasi
+                  - entity: switch.greenhouse_a_katup_pengisian_tandon
+
+  # ==================================
+  # == View/Tab for System Settings
+  # ==================================
+  - title: Pengaturan
+    path: pengaturan
+    icon: mdi:cog
+    cards:
+      - type: entities
+        title: Pengaturan Automasi Greenhouse A
+        show_header_toggle: false
+        entities:
+          - type: section
+            label: Automasi Penyiraman
+          - entity: input_boolean.greenhouse_a_penyiraman_otomatis_terjadwal
+            name: Aktifkan Penyiraman Terjadwal
+          - entity: input_datetime.greenhouse_a_penyiraman_waktu_mulai
+          - entity: input_datetime.greenhouse_a_penyiraman_waktu_selesai
+          - entity: input_number.greenhouse_a_pompa_siram_durasi
+            name: Durasi Penyiraman (detik)
+          - type: divider
+          - type: section
+            label: Automasi Dosis pH & TDS
+          - entity: input_boolean.greenhouse_a_auto_dosing_enabled
+            name: Aktifkan Auto-Dosing
+          - entity: input_number.greenhouse_a_tds_target_min
+          - entity: input_number.greenhouse_a_ph_target_max
+          - type: divider
+          - type: section
+            label: Automasi Pengisian Tandon
+          - entity: input_boolean.greenhouse_a_auto_refill_enabled
+            name: Aktifkan Pengisian Otomatis
+          - entity: input_number.greenhouse_a_refill_target_low
+          - entity: input_number.greenhouse_a_refill_target_high

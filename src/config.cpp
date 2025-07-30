@@ -44,6 +44,7 @@ const int PUMP_NUTRISI_A_PIN = 25;   // Relay IN1
 const int PUMP_NUTRISI_B_PIN = 26;   // Relay IN2
 const int PUMP_PH_PIN = 27;          // Relay IN3
 const int PUMP_SIRAM_PIN = 33;       // Relay IN4
+const int PUMP_TANDON_PIN = 15;      // Relay IN5 (untuk katup solenoid/pompa pengisi)
 
 // --- Hardware & System Parameters ---
 const int TANDON_MAX_HEIGHT_CM = 100;
@@ -103,3 +104,5 @@ const std::string COMMAND_TOPIC_PUMP_PH = std::string(BASE_TOPIC) + "/pompa/ph/k
 const std::string STATE_TOPIC_PUMP_PH = std::string(BASE_TOPIC) + "/pompa/ph/status";
 const std::string COMMAND_TOPIC_PUMP_SIRAM = std::string(BASE_TOPIC) + "/pompa/penyiraman/kontrol";
 const std::string STATE_TOPIC_PUMP_SIRAM = std::string(BASE_TOPIC) + "/pompa/penyiraman/status";
+const std::string COMMAND_TOPIC_PUMP_TANDON = std::string(BASE_TOPIC) + "/pompa/tandon/kontrol";
+const std::string STATE_TOPIC_PUMP_TANDON = std::string(BASE_TOPIC) + "/pompa/tandon/status";

@@ -146,6 +146,7 @@ static void subscribe_to_topics() {
     mqttClient.subscribe(COMMAND_TOPIC_PUMP_B.c_str());
     mqttClient.subscribe(COMMAND_TOPIC_PUMP_PH.c_str());
     mqttClient.subscribe(COMMAND_TOPIC_PUMP_SIRAM.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_PUMP_TANDON.c_str());
     mqttClient.subscribe(COMMAND_TOPIC_SYSTEM_MODE.c_str());
 }
 

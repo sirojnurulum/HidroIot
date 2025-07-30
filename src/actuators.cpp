@@ -38,7 +38,8 @@ static Pump pumps[] = {
     {PUMP_NUTRISI_A_PIN, "Nutrisi A", COMMAND_TOPIC_PUMP_A, STATE_TOPIC_PUMP_A, false, 0},
     {PUMP_NUTRISI_B_PIN, "Nutrisi B", COMMAND_TOPIC_PUMP_B, STATE_TOPIC_PUMP_B, false, 0},
     {PUMP_PH_PIN, "pH", COMMAND_TOPIC_PUMP_PH, STATE_TOPIC_PUMP_PH, false, 0},
-    {PUMP_SIRAM_PIN, "Penyiraman", COMMAND_TOPIC_PUMP_SIRAM, STATE_TOPIC_PUMP_SIRAM, false, 0}};
+    {PUMP_SIRAM_PIN, "Penyiraman", COMMAND_TOPIC_PUMP_SIRAM, STATE_TOPIC_PUMP_SIRAM, false, 0},
+    {PUMP_TANDON_PIN, "Pengisian Tandon", COMMAND_TOPIC_PUMP_TANDON, STATE_TOPIC_PUMP_TANDON, false, 0}};
 
 /// @brief The total number of pumps, calculated automatically from the array size.
 static const int NUM_PUMPS = sizeof(pumps) / sizeof(pumps[0]);
@@ -96,6 +97,12 @@ void actuators_handle_pump_command(const char* topic, const char* command) {
         pumps[i].stopTime = 0; // Cancel any timed run
         LOG_PRINTF("[Pump] %s force stopped via MQTT.\n", pumps[i].name);
         mqtt_publish_state(pumps[i].stateTopic, PAYLOAD_OFF, true);
+      } else if (pumps[i].pin == PUMP_TANDON_PIN && strcasecmp(command, "ON") == 0) {
+        // Handle simple ON command for the refill pump/valve
+        digitalWrite(pumps[i].pin, HIGH);
+        pumps[i].isOn = true;
+        LOG_PRINTF("[Pump] %s turned ON via MQTT.\n", pumps[i].name);
+        mqtt_publish_state(pumps[i].stateTopic, PAYLOAD_ON, true);
       } else if (pumps[i].pin == PUMP_SIRAM_PIN) {
         // For the watering pump, the command is a duration in seconds
         float duration_s = atof(command);

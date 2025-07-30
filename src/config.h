@@ -102,6 +102,8 @@ extern const int PUMP_NUTRISI_B_PIN;
 extern const int PUMP_PH_PIN;
 /// @brief GPIO pin connected to the relay for the watering pump.
 extern const int PUMP_SIRAM_PIN;
+/// @brief GPIO pin connected to the relay for the reservoir refill valve/pump.
+extern const int PUMP_TANDON_PIN;
 /// @brief Analog GPIO pin for the pH sensor.
 extern const int PH_SENSOR_PIN;
 /// @brief GPIO pin for the PZEM-004T's TX, connected to the ESP32's RX2.
@@ -185,5 +187,9 @@ extern const std::string STATE_TOPIC_PUMP_PH;
 extern const std::string COMMAND_TOPIC_PUMP_SIRAM;
 /// @brief MQTT topic for publishing the state of the watering pump.
 extern const std::string STATE_TOPIC_PUMP_SIRAM;
+/// @brief MQTT topic for receiving commands for the reservoir refill valve/pump.
+extern const std::string COMMAND_TOPIC_PUMP_TANDON;
+/// @brief MQTT topic for publishing the state of the reservoir refill valve/pump.
+extern const std::string STATE_TOPIC_PUMP_TANDON;
 
 #endif // CONFIG_H

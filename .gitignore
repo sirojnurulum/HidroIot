@@ -2,7 +2,7 @@
 .idea
 .vscode
 Makefile
-Makefile
+Makefile.mk
 homeassistant/
 # PlatformIO build artifacts
 .pio/

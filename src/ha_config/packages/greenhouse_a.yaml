@@ -1,0 +1,272 @@
+# ======================================================================
+# ==  HOME ASSISTANT PACKAGE FOR GREENHOUSE 'A'
+# ======================================================================
+
+# This file is a complete package for a single greenhouse instance.
+# To add a new greenhouse in the future, you can copy this file,
+# rename it (e.g., to greenhouse_b.yaml), and then use 'find and replace'
+# to change "greenhouse_a" to the new instance ID.
+
+# =================================================
+# == HELPERS
+# =================================================
+input_number:
+  greenhouse_a_pompa_nutrisi_a_volume:
+    name: "Greenhouse A: Volume Nutrisi A"
+    initial: 20
+    min: 1
+    max: 200
+    step: 1
+    unit_of_measurement: "ml"
+    icon: mdi:beaker-outline
+
+  greenhouse_a_pompa_nutrisi_b_volume:
+    name: "Greenhouse A: Volume Nutrisi B"
+    initial: 20
+    min: 1
+    max: 200
+    step: 1
+    unit_of_measurement: "ml"
+    icon: mdi:beaker-outline
+
+  greenhouse_a_pompa_ph_volume:
+    name: "Greenhouse A: Volume pH"
+    initial: 10
+    min: 1
+    max: 100
+    step: 1
+    unit_of_measurement: "ml"
+    icon: mdi:ph
+
+  greenhouse_a_pompa_siram_durasi:
+    name: "Greenhouse A: Durasi Penyiraman"
+    initial: 15
+    min: 1
+    max: 300
+    step: 1
+    unit_of_measurement: "s"
+    icon: mdi:timer-sand
+
+input_datetime:
+  greenhouse_a_penyiraman_waktu_mulai:
+    name: "Greenhouse A: Waktu Mulai Penyiraman"
+    has_date: false
+    has_time: true
+    initial: "07:00:00"
+    icon: mdi:clock-start
+
+  greenhouse_a_penyiraman_waktu_selesai:
+    name: "Greenhouse A: Waktu Selesai Penyiraman"
+    has_date: false
+    has_time: true
+    initial: "15:00:00"
+    icon: mdi:clock-end
+
+input_boolean:
+  greenhouse_a_penyiraman_otomatis_terjadwal:
+    name: "Greenhouse A: Penyiraman Otomatis"
+    icon: mdi:sprinkler-variant
+
+# =================================================
+# == SCRIPTS
+# =================================================
+script:
+  greenhouse_a_dosis_nutrisi_a:
+    alias: "Greenhouse A: Dosis Nutrisi A"
+    icon: mdi:water-pump
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "hidroponik/greenhouse_a/pompa/nutrisi_a/kontrol"
+          payload: "{{ states('input_number.greenhouse_a_pompa_nutrisi_a_volume') | int(0) }}"
+
+  greenhouse_a_dosis_nutrisi_b:
+    alias: "Greenhouse A: Dosis Nutrisi B"
+    icon: mdi:water-pump
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "hidroponik/greenhouse_a/pompa/nutrisi_b/kontrol"
+          payload: "{{ states('input_number.greenhouse_a_pompa_nutrisi_b_volume') | int(0) }}"
+
+  greenhouse_a_dosis_ph:
+    alias: "Greenhouse A: Dosis pH"
+    icon: mdi:water-pump
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "hidroponik/greenhouse_a/pompa/ph/kontrol"
+          payload: "{{ states('input_number.greenhouse_a_pompa_ph_volume') | int(0) }}"
+
+  greenhouse_a_siram_tanaman:
+    alias: "Greenhouse A: Siram Tanaman"
+    icon: mdi:sprinkler-variant
+    sequence:
+      - service: mqtt.publish
+        data:
+          topic: "hidroponik/greenhouse_a/pompa/penyiraman/kontrol"
+          payload: "{{ states('input_number.greenhouse_a_pompa_siram_durasi') | int(0) }}"
+
+# =================================================
+# == AUTOMATIONS
+# =================================================
+automation:
+  - id: 'greenhouse_a_otomatisasi_penyiraman_terjadwal_per_jam'
+    alias: "Greenhouse A: Jalankan Penyiraman Terjadwal Setiap Jam"
+    description: "Menyiram tanaman setiap jam dalam rentang waktu yang dapat diatur."
+    trigger:
+      - platform: time_pattern
+        hours: "/1"
+    condition:
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: input_boolean.greenhouse_a_penyiraman_otomatis_terjadwal
+            state: 'on'
+          - condition: state
+            entity_id: binary_sensor.greenhouse_a_status_esp32
+            state: 'on'
+          - condition: time
+            after: input_datetime.greenhouse_a_penyiraman_waktu_mulai
+            before: input_datetime.greenhouse_a_penyiraman_waktu_selesai
+    action:
+      - service: script.greenhouse_a_siram_tanaman
+        data: {}
+    mode: single
+
+# =================================================
+# == SENSORS & ENTITIES (MQTT)
+# =================================================
+mqtt:
+  sensor:
+    - name: "Greenhouse A Level Air"
+      unique_id: greenhouse_a_level_air
+      state_topic: "hidroponik/greenhouse_a/air/level_cm"
+      unit_of_measurement: "cm"
+      icon: mdi:waves-arrow-up
+      # Define the anchors on the first entity. They can be aliased on all subsequent entities.
+      availability: &greenhouse_a_availability
+        - topic: "hidroponik/greenhouse_a/status/LWT"
+          payload_available: "Online"
+          payload_not_available: "Offline"
+      device: &greenhouse_a_device
+        identifiers:
+          - "hidroponik_greenhouse_a"
+        name: "Hidroponik Greenhouse A"
+        manufacturer: "DIY Project"
+        model: "ESP32 Hydroponics Controller"
+
+    - name: "Greenhouse A Suhu Air"
+      unique_id: greenhouse_a_suhu_air
+      state_topic: "hidroponik/greenhouse_a/air/suhu_c"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Suhu Udara"
+      unique_id: greenhouse_a_suhu_udara
+      state_topic: "hidroponik/greenhouse_a/udara/suhu_c"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Kelembaban Udara"
+      unique_id: greenhouse_a_kelembaban_udara
+      state_topic: "hidroponik/greenhouse_a/udara/kelembaban_persen"
+      unit_of_measurement: "%"
+      device_class: humidity
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A TDS Air"
+      unique_id: greenhouse_a_tds_air
+      state_topic: "hidroponik/greenhouse_a/air/tds_ppm"
+      unit_of_measurement: "ppm"
+      icon: mdi:water-opacity
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A pH Air"
+      unique_id: greenhouse_a_ph_air
+      state_topic: "hidroponik/greenhouse_a/air/ph"
+      icon: mdi:ph
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Tegangan Listrik"
+      unique_id: greenhouse_a_tegangan_v
+      state_topic: "hidroponik/greenhouse_a/listrik/tegangan_v"
+      unit_of_measurement: "V"
+      device_class: voltage
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Arus Listrik"
+      unique_id: greenhouse_a_arus_a
+      state_topic: "hidroponik/greenhouse_a/listrik/arus_a"
+      unit_of_measurement: "A"
+      device_class: current
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Daya Listrik"
+      unique_id: greenhouse_a_daya_w
+      state_topic: "hidroponik/greenhouse_a/listrik/daya_w"
+      unit_of_measurement: "W"
+      device_class: power
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Konsumsi Energi"
+      unique_id: greenhouse_a_energi_kwh
+      state_topic: "hidroponik/greenhouse_a/listrik/energi_kwh"
+      unit_of_measurement: "kWh"
+      device_class: energy
+      state_class: total_increasing
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Frekuensi Listrik"
+      unique_id: greenhouse_a_frekuensi_hz
+      state_topic: "hidroponik/greenhouse_a/listrik/frekuensi_hz"
+      unit_of_measurement: "Hz"
+      device_class: frequency
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+    - name: "Greenhouse A Power Factor"
+      unique_id: greenhouse_a_power_factor
+      state_topic: "hidroponik/greenhouse_a/listrik/power_factor"
+      icon: mdi:alpha-p-circle-outline
+      state_class: measurement
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device
+
+  binary_sensor:
+    - name: "Greenhouse A Status ESP32"
+      unique_id: greenhouse_a_status_esp32
+      state_topic: "hidroponik/greenhouse_a/status/LWT"
+      payload_on: "Online"
+      payload_off: "Offline"
+      device_class: connectivity
+      device: *greenhouse_a_device
+
+  select:
+    - name: "Greenhouse A Mode Sistem"
+      unique_id: greenhouse_a_mode_sistem
+      state_topic: "hidroponik/greenhouse_a/sistem/mode/status"
+      command_topic: "hidroponik/greenhouse_a/sistem/mode/kontrol"
+      options:
+        - "NUTRITION"
+        - "CLEANER"
+      optimistic: false
+      retain: true
+      availability: *greenhouse_a_availability
+      device: *greenhouse_a_device

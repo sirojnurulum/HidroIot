@@ -1,0 +1,128 @@
+# ===================================================================
+# ==  Main Dashboard Configuration (Lovelace UI)
+# ===================================================================
+# This file defines the layout and content of your primary dashboard.
+
+title: Hidroponik Cerdas
+views:
+  # ==================================
+  # == View/Tab for Greenhouse A
+  # ==================================
+  - title: Greenhouse A
+    path: greenhouse-a
+    icon: mdi:greenhouse
+    cards:
+      - type: vertical-stack
+        cards:
+          # --- Card 1: Status & Key Metrics ---
+          - type: entities
+            title: Status Utama Greenhouse A
+            show_header_toggle: false
+            entities:
+              - entity: binary_sensor.greenhouse_a_status_esp32
+                name: Status Kontroler
+              - entity: sensor.greenhouse_a_level_air
+                name: Level Air
+              - entity: sensor.greenhouse_a_suhu_air
+                name: Suhu Air
+              - entity: sensor.greenhouse_a_tds_air
+                name: TDS Air
+              - entity: sensor.greenhouse_a_ph_air
+                name: pH Air
+
+          # --- Card 2: Pump Controls ---
+          - type: grid
+            title: Kontrol Pompa Manual
+            columns: 2
+            square: false
+            cards:
+              # --- Tombol Pompa Nutrisi A ---
+              - type: custom:button-card
+                entity: script.greenhouse_a_dosis_nutrisi_a
+                name: Dosis Nutrisi A
+                icon: mdi:beaker-plus-outline
+                tap_action:
+                  action: call-service
+                  service: script.turn_on
+                  service_data:
+                    entity_id: script.greenhouse_a_dosis_nutrisi_a
+                state:
+                  - value: 'on'
+                    spin: true
+                    color: var(--paper-item-icon-active-color) # Warna kuning/amber
+
+              # --- Tombol Pompa Nutrisi B ---
+              - type: custom:button-card
+                entity: script.greenhouse_a_dosis_nutrisi_b
+                name: Dosis Nutrisi B
+                icon: mdi:beaker-plus-outline
+                tap_action:
+                  action: call-service
+                  service: script.turn_on
+                  service_data:
+                    entity_id: script.greenhouse_a_dosis_nutrisi_b
+                state:
+                  - value: 'on'
+                    spin: true
+                    color: var(--paper-item-icon-active-color)
+
+              # --- Tombol Pompa pH ---
+              - type: custom:button-card
+                entity: script.greenhouse_a_dosis_ph
+                name: Dosis pH
+                icon: mdi:ph
+                tap_action:
+                  action: call-service
+                  service: script.turn_on
+                  service_data:
+                    entity_id: script.greenhouse_a_dosis_ph
+                state:
+                  - value: 'on'
+                    spin: true
+                    color: var(--paper-item-icon-active-color)
+
+              # --- Tombol Pompa Siram ---
+              - type: custom:button-card
+                entity: script.greenhouse_a_siram_tanaman
+                name: Siram Tanaman
+                icon: mdi:sprinkler
+                tap_action:
+                  action: call-service
+                  service: script.turn_on
+                  service_data:
+                    entity_id: script.greenhouse_a_siram_tanaman
+                state:
+                  - value: 'on'
+                    spin: true
+                    color: var(--paper-item-icon-active-color)
+
+          # --- Card 3: Automation Settings ---
+          - type: entities
+            title: Pengaturan Automasi Penyiraman
+            show_header_toggle: false
+            entities:
+              - entity: input_boolean.greenhouse_a_penyiraman_otomatis_terjadwal
+              - entity: input_datetime.greenhouse_a_penyiraman_waktu_mulai
+              - entity: input_datetime.greenhouse_a_penyiraman_waktu_selesai
+              - entity: input_number.greenhouse_a_pompa_siram_durasi
+
+          # --- Card 4: Power Metrics ---
+          - type: glance
+            title: Metrik Kelistrikan
+            show_name: true
+            show_icon: true
+            show_state: true
+            columns: 3
+            entities:
+              - entity: sensor.greenhouse_a_daya_listrik
+                name: Daya
+              - entity: sensor.greenhouse_a_tegangan_listrik
+                name: Tegangan
+              - entity: sensor.greenhouse_a_arus_listrik
+                name: Arus
+              - entity: sensor.greenhouse_a_konsumsi_energi
+                name: Energi
+              - entity: sensor.greenhouse_a_frekuensi_listrik
+                name: Frekuensi
+              - entity: sensor.greenhouse_a_power_factor
+                name: Power Factor

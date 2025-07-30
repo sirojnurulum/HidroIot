@@ -11,6 +11,17 @@
 #include <string>
 #include <IPAddress.h>
 
+// --- Preprocessor Macros for Stringification ---
+// These macros allow us to turn a build flag (like greenhouse_a) into a string literal ("greenhouse_a").
+// This is a robust way to handle instance IDs.
+#define XSTR(s) #s
+#define STR(s) XSTR(s)
+
+// Pre-processor check to ensure an instance ID is defined during compilation.
+#ifndef HYDROPONIC_INSTANCE_ID
+  #error "HYDROPONIC_INSTANCE_ID is not defined. Please select a build environment in platformio.ini (e.g., 'greenhouse_a')."
+#endif
+
 // =======================================================================
 //                           LOGGING
 // =======================================================================

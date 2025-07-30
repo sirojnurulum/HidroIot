@@ -24,8 +24,8 @@ const int MQTT_PORT = ENV_MQTT_PORT;
 // =======================================================================
 
 // --- MQTT Identity ---
-const char *MQTT_CLIENT_ID = "esp32-hydroponic-prod";
-const char *BASE_TOPIC = "hidroponik/produksi";
+const char *MQTT_CLIENT_ID = "esp32-hydroponic-" STR(HYDROPONIC_INSTANCE_ID);
+const char *BASE_TOPIC = "hidroponik/" STR(HYDROPONIC_INSTANCE_ID);
 
 // --- Pin Definitions ---
 // Sensor Pins

@@ -1,0 +1,15 @@
+# This is an example file. The Makefile will use this template to generate `homeassistant/homeassistant.yaml`.
+# This file contains the keys that go UNDER the 'homeassistant:' block in the main configuration.
+# The 'homeassistant:' key itself should NOT be in this file.
+
+# ==================================
+# == User-Specific URLs (EDIT THESE)
+# ==================================
+external_url: "__HA_EXTERNAL_URL__"
+internal_url: "http://localhost:8123"
+
+# ==================================
+# == Core Application Logic (DO NOT CHANGE)
+# ==================================
+# This defines the packages directory, which is the core of the multi-instance architecture.
+packages: !include_dir_named packages

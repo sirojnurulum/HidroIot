@@ -5,150 +5,24 @@ default_config:
 frontend:
   themes: !include_dir_merge_named themes
 
-input_number: !include input_numbers.yaml
-automation: !include automations.yaml
-script: !include scripts.yaml
-scene: !include scenes.yaml
- 
+# Include the entire homeassistant block from a separate file.
+# This file now contains URLs AND the packages directory definition.
 homeassistant: !include homeassistant.yaml
+
+# Include HTTP proxy settings from a separate, local-only file.
 http: !include http.yaml
 
-# Konfigurasi MQTT (Format Modern & Lengkap)
-mqtt:
-  # Sensor-sensor untuk sistem hidroponik
-  sensor:
-    - name: "Level Air Tandon"
-      unique_id: hidroponik_level_air
-      state_topic: "hidroponik/produksi/air/level_cm"
-      unit_of_measurement: "cm"
-      icon: mdi:waves-arrow-up
-      value_template: "{{ value | float(0) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
+# Take control of the user interface (Lovelace) in YAML mode.
+# This tells Home Assistant to load its main dashboard configuration
+# from the 'ui-lovelace.yaml' file.
+lovelace:
+  mode: yaml
+  # In YAML mode, resources must be declared here in the main configuration
+  # so they are loaded before the UI is rendered.
+  resources:
+    - url: /hacsfiles/button-card/button-card.js
+      type: module
 
-    - name: "Suhu Air"
-      unique_id: hidroponik_suhu_air
-      state_topic: "hidroponik/produksi/air/suhu_c"
-      unit_of_measurement: "°C"
-      device_class: temperature
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Suhu Udara"
-      unique_id: hidroponik_suhu_udara
-      state_topic: "hidroponik/produksi/udara/suhu_c"
-      unit_of_measurement: "°C"
-      device_class: temperature
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Kelembaban Udara"
-      unique_id: hidroponik_kelembaban_udara
-      state_topic: "hidroponik/produksi/udara/kelembaban_persen"
-      unit_of_measurement: "%"
-      device_class: humidity
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "TDS Air"
-      unique_id: hidroponik_tds_air
-      state_topic: "hidroponik/produksi/air/tds_ppm"
-      unit_of_measurement: "ppm"
-      icon: mdi:water-opacity
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    # Sensor-sensor untuk pemantauan listrik
-    - name: "Tegangan Listrik"
-      unique_id: hidroponik_tegangan_v
-      state_topic: "hidroponik/produksi/listrik/tegangan_v"
-      unit_of_measurement: "V"
-      device_class: voltage
-      state_class: measurement
-      value_template: "{{ value | float(1) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Arus Listrik"
-      unique_id: hidroponik_arus_a
-      state_topic: "hidroponik/produksi/listrik/arus_a"
-      unit_of_measurement: "A"
-      device_class: current
-      state_class: measurement
-      value_template: "{{ value | float(3) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Daya Listrik"
-      unique_id: hidroponik_daya_w
-      state_topic: "hidroponik/produksi/listrik/daya_w"
-      unit_of_measurement: "W"
-      device_class: power
-      state_class: measurement
-      value_template: "{{ value | float(1) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Konsumsi Energi"
-      unique_id: hidroponik_energi_kwh
-      state_topic: "hidroponik/produksi/listrik/energi_kwh"
-      unit_of_measurement: "kWh"
-      device_class: energy
-      state_class: total_increasing # Penting untuk dasbor energi
-      value_template: "{{ value | float(3) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Frekuensi Listrik"
-      unique_id: hidroponik_frekuensi_hz
-      state_topic: "hidroponik/produksi/listrik/frekuensi_hz"
-      unit_of_measurement: "Hz"
-      device_class: frequency
-      state_class: measurement
-      value_template: "{{ value | float(1) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-    - name: "Produksi - Power Factor"
-      unique_id: hidroponik_produksi_power_factor
-      state_topic: "hidroponik/produksi/listrik/power_factor"
-      unit_of_measurement: "" # Power factor tidak memiliki unit
-      device_class: power_factor
-      state_class: measurement
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-      
-    - name: "pH Air"
-      unique_id: hidroponik_ph_air
-      state_topic: "hidroponik/produksi/air/ph"
-      icon: mdi:ph
-      value_template: "{{ value | float(2) }}"
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"
-
-
-
-  binary_sensor:
-    - name: "Status ESP32"
-      unique_id: hidroponik_status_online
-      state_topic: "hidroponik/produksi/status/LWT"
-      payload_on: "Online"
-      payload_off: "Offline"
-      device_class: connectivity
+# All other configurations (mqtt, input_number, script, automation, etc.)
+# are now defined within the files in the 'packages' directory.
+# This main configuration file should remain clean and simple.

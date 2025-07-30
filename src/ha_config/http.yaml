@@ -1,0 +1,7 @@
+# Mengaktifkan header X-Forwarded-For yang dikirim oleh reverse proxy (Nginx)
+use_x_forwarded_for: true
+# Daftar IP yang diizinkan untuk bertindak sebagai trusted proxy.
+# localhost (127.0.0.1) harus ada karena Nginx berada di VPS yang sama.
+trusted_proxies:
+  - 127.0.0.1
+  - ::1

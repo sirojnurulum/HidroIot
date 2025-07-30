@@ -9,30 +9,16 @@ input_number: !include input_numbers.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
-
-homeassistant:
-  # URL eksternal (HTTPS) yang akan digunakan untuk mengakses Home Assistant dari luar
-  external_url: "https://your-domain.com" 
-  # URL internal (HTTP) yang digunakan Home Assistant untuk mengakses dirinya sendiri di jaringan lokal VPS
-  internal_url: "http://localhost:8123" 
-
-http:
-  # Mengaktifkan header X-Forwarded-For yang dikirim oleh reverse proxy (Nginx)
-  use_x_forwarded_for: true
-  # Daftar IP yang diizinkan untuk bertindak sebagai trusted proxy.
-  # localhost (127.0.0.1) harus ada karena Nginx berada di VPS yang sama.
-  trusted_proxies:
-    - 127.0.0.1
-    - ::1 
+ 
+homeassistant: !include homeassistant.yaml
+http: !include http.yaml
 
 # Konfigurasi MQTT (Format Modern & Lengkap)
 mqtt:
-  # =================================================
-  # == ENTITAS UNTUK INSTANCE 'PRODUKSI'
-  # =================================================
+  # Sensor-sensor untuk sistem hidroponik
   sensor:
-    - name: "Produksi - Level Air Tandon"
-      unique_id: hidroponik_produksi_level_air
+    - name: "Level Air Tandon"
+      unique_id: hidroponik_level_air
       state_topic: "hidroponik/produksi/air/level_cm"
       unit_of_measurement: "cm"
       icon: mdi:waves-arrow-up
@@ -41,8 +27,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Suhu Air"
-      unique_id: hidroponik_produksi_suhu_air
+    - name: "Suhu Air"
+      unique_id: hidroponik_suhu_air
       state_topic: "hidroponik/produksi/air/suhu_c"
       unit_of_measurement: "°C"
       device_class: temperature
@@ -51,8 +37,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Suhu Udara"
-      unique_id: hidroponik_produksi_suhu_udara
+    - name: "Suhu Udara"
+      unique_id: hidroponik_suhu_udara
       state_topic: "hidroponik/produksi/udara/suhu_c"
       unit_of_measurement: "°C"
       device_class: temperature
@@ -61,8 +47,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Kelembaban Udara"
-      unique_id: hidroponik_produksi_kelembaban_udara
+    - name: "Kelembaban Udara"
+      unique_id: hidroponik_kelembaban_udara
       state_topic: "hidroponik/produksi/udara/kelembaban_persen"
       unit_of_measurement: "%"
       device_class: humidity
@@ -71,8 +57,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - TDS Air"
-      unique_id: hidroponik_produksi_tds_air
+    - name: "TDS Air"
+      unique_id: hidroponik_tds_air
       state_topic: "hidroponik/produksi/air/tds_ppm"
       unit_of_measurement: "ppm"
       icon: mdi:water-opacity
@@ -81,11 +67,9 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    # =================================================
-    # == SENSOR LISTRIK UNTUK INSTANCE 'PRODUKSI'
-    # =================================================
-    - name: "Produksi - Tegangan Listrik"
-      unique_id: hidroponik_produksi_tegangan_v
+    # Sensor-sensor untuk pemantauan listrik
+    - name: "Tegangan Listrik"
+      unique_id: hidroponik_tegangan_v
       state_topic: "hidroponik/produksi/listrik/tegangan_v"
       unit_of_measurement: "V"
       device_class: voltage
@@ -95,8 +79,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Arus Listrik"
-      unique_id: hidroponik_produksi_arus_a
+    - name: "Arus Listrik"
+      unique_id: hidroponik_arus_a
       state_topic: "hidroponik/produksi/listrik/arus_a"
       unit_of_measurement: "A"
       device_class: current
@@ -106,8 +90,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Daya Listrik"
-      unique_id: hidroponik_produksi_daya_w
+    - name: "Daya Listrik"
+      unique_id: hidroponik_daya_w
       state_topic: "hidroponik/produksi/listrik/daya_w"
       unit_of_measurement: "W"
       device_class: power
@@ -117,8 +101,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Konsumsi Energi"
-      unique_id: hidroponik_produksi_energi_kwh
+    - name: "Konsumsi Energi"
+      unique_id: hidroponik_energi_kwh
       state_topic: "hidroponik/produksi/listrik/energi_kwh"
       unit_of_measurement: "kWh"
       device_class: energy
@@ -128,8 +112,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
 
-    - name: "Produksi - Frekuensi Listrik"
-      unique_id: hidroponik_produksi_frekuensi_hz
+    - name: "Frekuensi Listrik"
+      unique_id: hidroponik_frekuensi_hz
       state_topic: "hidroponik/produksi/listrik/frekuensi_hz"
       unit_of_measurement: "Hz"
       device_class: frequency
@@ -150,8 +134,8 @@ mqtt:
       payload_available: "Online"
       payload_not_available: "Offline"
       
-    - name: "Produksi - pH Air"
-      unique_id: hidroponik_produksi_ph_air
+    - name: "pH Air"
+      unique_id: hidroponik_ph_air
       state_topic: "hidroponik/produksi/air/ph"
       icon: mdi:ph
       value_template: "{{ value | float(2) }}"
@@ -162,34 +146,9 @@ mqtt:
 
 
   binary_sensor:
-    - name: "Produksi - Status ESP32"
-      unique_id: hidroponik_produksi_status_online
+    - name: "Status ESP32"
+      unique_id: hidroponik_status_online
       state_topic: "hidroponik/produksi/status/LWT"
       payload_on: "Online"
       payload_off: "Offline"
       device_class: connectivity
-
-    # =================================================
-    # == ENTITAS UNTUK INSTANCE 'PENYEMAIAN'
-    # =================================================
-    - name: "Penyemaian - Status ESP32"
-      unique_id: hidroponik_penyemaian_status_online
-      state_topic: "hidroponik/penyemaian/status/LWT"
-      payload_on: "Online"
-      payload_off: "Offline"
-      device_class: connectivity
-
-  # Kontrol untuk Mode Sistem (hanya untuk Produksi)
-  select:
-    - name: "Produksi - Mode Sistem"
-      unique_id: hidroponik_produksi_mode_sistem
-      state_topic: "hidroponik/produksi/sistem/mode/status"
-      command_topic: "hidroponik/produksi/sistem/mode/kontrol"
-      options:
-        - "NUTRITION"
-        - "CLEANER"
-      optimistic: false
-      retain: true
-      availability_topic: "hidroponik/produksi/status/LWT"
-      payload_available: "Online"
-      payload_not_available: "Offline"

@@ -1,0 +1,4 @@
+# URL eksternal (HTTPS) yang akan digunakan untuk mengakses Home Assistant dari luar
+external_url: "https://ha.o-m-b.id" 
+# URL internal (HTTP) yang digunakan Home Assistant untuk mengakses dirinya sendiri di jaringan lokal VPS
+internal_url: "http://localhost:8123" 

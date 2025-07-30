@@ -1,26 +1,26 @@
-# Helper untuk memilih volume pompa (Instance Produksi)
-produksi_pompa_a_volume:
-  name: "Produksi - Volume Dosis Nutrisi A"
+# Helper untuk memilih volume dan durasi pompa
+pompa_nutrisi_a_volume:
+  name: "Volume Dosis Nutrisi A"
   initial: 20
   min: 1
   max: 200
   step: 1
   unit_of_measurement: "ml"
-  icon: mdi:beaker-plus-outline
+  icon: mdi:beaker-outline
   mode: box
 
-produksi_pompa_b_volume:
-  name: "Produksi - Volume Dosis Nutrisi B"
+pompa_nutrisi_b_volume:
+  name: "Volume Dosis Nutrisi B"
   initial: 20
   min: 1
   max: 200
   step: 1
   unit_of_measurement: "ml"
-  icon: mdi:beaker-plus-outline
+  icon: mdi:beaker-outline
   mode: box
 
-produksi_pompa_ph_volume:
-  name: "Produksi - Volume Dosis pH"
+pompa_ph_volume:
+  name: "Volume Dosis pH"
   initial: 10
   min: 1
   max: 100
@@ -29,13 +29,13 @@ produksi_pompa_ph_volume:
   icon: mdi:ph
   mode: box
 
-# Helper untuk durasi penyiraman (Instance Penyemaian)
-penyemaian_pompa_siram_durasi:
-  name: "Penyemaian - Durasi Penyiraman"
+# Helper untuk durasi penyiraman
+pompa_siram_durasi:
+  name: "Durasi Penyiraman"
   initial: 15
   min: 1
   max: 300 # Batas atas 5 menit, bisa disesuaikan
   step: 1
-  unit_of_measurement: "detik"
+  unit_of_measurement: "s"
   icon: mdi:timer-sand
   mode: box

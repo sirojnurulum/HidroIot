@@ -1,34 +1,42 @@
+/**
+ * @file actuators.h
+ * @brief Public interface for the actuator module.
+ *
+ * This file declares all functions related to controlling physical actuators
+ * like pumps and the buzzer, and for handling system state logic.
+ */
 #ifndef ACTUATORS_H
 #define ACTUATORS_H
 
-#if HYDROPONIC_INSTANCE == 1
 #include "sensors.h" // For SensorValues struct
-#endif
 
 /**
- * @brief Initializes all actuator pins (pumps, buzzer).
+ * @brief Initializes all actuator pins.
+ * Sets the GPIO pins for all pumps and the buzzer to OUTPUT mode and ensures
+ * they are in a default OFF state. This should be called once in `setup()`.
  */
 void actuators_init();
 
 /**
- * @brief Handles the timed operation of actuators. Call this in the main loop().
- *        For example, to stop a pump after a specified duration.
+ * @brief Main loop for the actuator module.
+ * This function must be called repeatedly in the main `loop()`. It is responsible
+ * for checking if any timed pump runs have completed and stopping them.
  */
 void actuators_loop();
 
 /**
- * @brief Processes an incoming MQTT command to control a pump.
- *        Supports volume commands (e.g., "50") and "OFF".
- * @param topic The topic the command was received on.
- * @param command The payload of the command as a C-style string.
+ * @brief Handles incoming MQTT commands for all pumps.
+ * Parses the topic and payload to determine which pump to control and how.
+ * Supports volume-based control (ml) for dosing pumps and duration-based
+ * control (s) for the watering pump. Also handles the "OFF" command.
+ * @param topic The MQTT topic the command was received on.
+ * @param command The payload of the MQTT command.
  */
 void actuators_handle_pump_command(const char* topic, const char* command);
 
-#if HYDROPONIC_INSTANCE == 1
 /**
- * @brief Processes an incoming MQTT command to change the system mode.
- *        Supports "NUTRITION" and "CLEANER" modes.
- * @param command The payload of the command as a C-style string.
+ * @brief Handles incoming MQTT commands for changing the system mode (e.g., NUTRITION, CLEANER).
+ * @param command The payload of the mode command.
  */
 void actuators_handle_mode_command(const char* command);
 
@@ -39,15 +47,9 @@ void actuators_handle_mode_command(const char* command);
 void actuators_update_alert_status(const SensorValues& values);
 
 /**
- * @brief Checks sensor values and performs automatic nutrient dosing if required.
- * @param values The SensorValues struct containing the latest sensor data.
- */
-void actuators_auto_dose_nutrients(const SensorValues& values);
-#endif
-
-/**
- * @brief Publishes the current state of all pumps to MQTT.
- *        Typically called when an MQTT connection is successfully established.
+ * @brief Publishes the current state of all actuators to their respective MQTT topics.
+ * This is useful on startup or after an MQTT reconnection to ensure Home Assistant
+ * has the correct state information.
  */
 void actuators_publish_states();
 

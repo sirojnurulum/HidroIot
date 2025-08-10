@@ -12,3 +12,4 @@ homeassistant/
 .env
 credentials.ini
 .DS_Store
+PROJECT_MEMORY.md

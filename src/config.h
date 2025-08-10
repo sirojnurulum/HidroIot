@@ -122,11 +122,15 @@ extern const float WATER_LEVEL_CRITICAL_CM;
 extern const float TDS_K_VALUE;
 /// @brief The temperature coefficient for TDS compensation.
 extern const float TDS_TEMP_COEFF;
-// pH Sensor Calibration Constants (MUST BE ADJUSTED BY USER)
-/// @brief The voltage reading from the pH sensor when submerged in a pH 7.0 buffer solution.
-extern const float PH_CALIBRATION_VOLTAGE_7; // Voltage reading in pH 7.0 buffer solution
-/// @brief The voltage reading from the pH sensor when submerged in a pH 4.0 buffer solution.
-extern const float PH_CALIBRATION_VOLTAGE_4; // Voltage reading in pH 4.0 buffer solution
+// pH Sensor 4-Point Calibration Constants (Actual Experiment Data)
+/// @brief The voltage reading from the pH sensor in pH 4.01 buffer solution.
+extern const float PH_CALIBRATION_VOLTAGE_401; 
+/// @brief The voltage reading from the pH sensor in pH 6.86 buffer solution.
+extern const float PH_CALIBRATION_VOLTAGE_686;
+/// @brief The voltage reading from the pH sensor in pH 7.0 buffer solution.
+extern const float PH_CALIBRATION_VOLTAGE_7;
+/// @brief The voltage reading from the pH sensor in pH 9.18 buffer solution.
+extern const float PH_CALIBRATION_VOLTAGE_918;
 
 
 // =======================================================================

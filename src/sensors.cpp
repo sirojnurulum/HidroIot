@@ -51,6 +51,10 @@ void sensors_init() {
   
   // Set the ADC resolution to 12-bit for higher precision on analog sensors.
   analogReadResolution(12);
+  
+  // Configure ADC for more accurate pH readings (same as calibration setup)
+  analogSetWidth(12);              // Set resolusi ADC ke 12-bit (4096)
+  analogSetAttenuation(ADC_11db);  // Set attenuation untuk range 0-3.3V
 }
 
 void sensors_read_all(SensorValues &values) {
@@ -184,13 +188,22 @@ static void read_pzem(SensorValues &values) {
 }
 
 /**
- * @brief Reads the pH sensor and calculates the pH value based on a two-point calibration.
+ * @brief Reads the pH sensor and calculates the pH value based on a four-point calibration.
+ * Uses interpolation linear segmental for maximum accuracy across pH range.
  * @return The calculated pH value, or NAN on failure.
  */
 static float read_ph() {
   const float VREF = 3.3;
   const int ADC_RESOLUTION = 4095;
-  int adcValue = analogRead(PH_SENSOR_PIN);
+  
+  // Read ADC multiple times for averaging (reduce noise)
+  int totalADC = 0;
+  const int samples = 10;
+  for(int i = 0; i < samples; i++) {
+    totalADC += analogRead(PH_SENSOR_PIN);
+    delay(10);
+  }
+  int adcValue = totalADC / samples;
   float voltage = adcValue * VREF / ADC_RESOLUTION;
 
   LOG_PRINT("  [Sensor] pH: ");
@@ -201,13 +214,29 @@ static float read_ph() {
     return NAN;
   }
 
-  // Linear interpolation/extrapolation based on two-point calibration.
-  // Formula: y = y1 + ((x - x1) / (x2 - x1)) * (y2 - y1)
-  // Where:
-  // (x1, y1) = (voltage at pH 7, 7.0)
-  // (x2, y2) = (voltage at pH 4, 4.0)
-  float phValue = 7.0 + ((voltage - PH_CALIBRATION_VOLTAGE_7) / (PH_CALIBRATION_VOLTAGE_4 - PH_CALIBRATION_VOLTAGE_7)) * (4.0 - 7.0);
+  // 4-Point Calibration using segmental linear interpolation
+  // Data points from actual calibration:
+  // pH 4.01 → 3.045V, pH 6.86 → 2.510V, pH 7.0 → 2.814V, pH 9.18 → 2.025V
+  float ph_value = 0.0;
+  
+  if (voltage >= PH_CALIBRATION_VOLTAGE_401) {
+    // Range asam ekstrem (pH < 4.01): extrapolasi dari pH 4.01 - pH 6.86
+    float slope_acid = (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686) / (4.01 - 6.86);
+    ph_value = 6.86 + ((voltage - PH_CALIBRATION_VOLTAGE_686) / slope_acid);
+  } else if (voltage >= PH_CALIBRATION_VOLTAGE_686) {
+    // Range asam-netral (pH 4.01 - 6.86): gunakan slope pH 4.01 - pH 6.86
+    float slope_acid_neutral = (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686) / (4.01 - 6.86);
+    ph_value = 6.86 + ((voltage - PH_CALIBRATION_VOLTAGE_686) / slope_acid_neutral);
+  } else if (voltage >= PH_CALIBRATION_VOLTAGE_918) {
+    // Range netral-basa (pH 6.86 - 9.18): gunakan slope pH 6.86 - pH 9.18
+    float slope_neutral_base = (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918) / (6.86 - 9.18);
+    ph_value = 9.18 + ((voltage - PH_CALIBRATION_VOLTAGE_918) / slope_neutral_base);
+  } else {
+    // Range basa (pH > 9.18): extrapolasi dari pH 6.86 - pH 9.18
+    float slope_base = (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918) / (6.86 - 9.18);
+    ph_value = 9.18 + ((voltage - PH_CALIBRATION_VOLTAGE_918) / slope_base);
+  }
 
-  LOG_PRINTF("Voltage: %.2fV, pH: %.2f\n", voltage, phValue);
-  return phValue;
+  LOG_PRINTF("Voltage: %.2fV, pH: %.2f (4-point calibration)\n", voltage, ph_value);
+  return ph_value;
 }

@@ -11,3 +11,4 @@ homeassistant/
 # Environment file with secrets
 .env
 credentials.ini
+.DS_Store

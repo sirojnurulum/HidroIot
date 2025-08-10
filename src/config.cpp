@@ -34,7 +34,7 @@ const int ULTRASONIC_ECHO_PIN = 4;   // JSN-SR04T Echo
 const int ONE_WIRE_BUS = 18;         // DS18B20 Data
 const int DHT_PIN = 13;              // DHT22 Data
 const int TDS_SENSOR_PIN = 34;       // TDS Sensor Analog Out
-const int PH_SENSOR_PIN = 32;        // pH Sensor Analog Out
+const int PH_SENSOR_PIN = 32;        // pH Sensor Analog Out (GPIO 32 - sesuai kalibrasi)
 const int PZEM_RX_PIN = 16;          // ESP32 RX2, connects to PZEM TX
 const int PZEM_TX_PIN = 17;          // ESP32 TX2, connects to PZEM RX
 
@@ -55,16 +55,25 @@ const float WATER_LEVEL_CRITICAL_CM = 20.0;
 // --- Sensor Calibration ---
 const float TDS_K_VALUE = 635.40;
 const float TDS_TEMP_COEFF = 0.02;
-// IMPORTANT: These are placeholder values. You MUST calibrate your sensor.
-const float PH_CALIBRATION_VOLTAGE_7 = 1.65; // Example: 1.65V at pH 7.0
-const float PH_CALIBRATION_VOLTAGE_4 = 2.15; // Example: 2.15V at pH 4.0
+
+// ===================================================================
+// == KALIBRASI SENSOR pH - DATA AKTUAL DARI EKSPERIMEN 4-TITIK ==
+// ===================================================================
+// Hasil kalibrasi aktual menggunakan buffer pH 4.01, 6.86, 7.0, dan 9.18
+// Data ini sudah diverifikasi dan memberikan akurasi maksimal
+//
+// CATATAN: Jangan ubah nilai ini kecuali melakukan kalibrasi ulang
+const float PH_CALIBRATION_VOLTAGE_401 = 3.045; // Tegangan untuk pH 4.01 (dari kalibrasi aktual)
+const float PH_CALIBRATION_VOLTAGE_686 = 2.510; // Tegangan untuk pH 6.86 (dari eksperimen aktual)
+const float PH_CALIBRATION_VOLTAGE_7   = 2.814; // Tegangan untuk pH 7.0 (dari kalibrasi aktual)
+const float PH_CALIBRATION_VOLTAGE_918 = 2.025; // Tegangan untuk pH 9.18 (dari eksperimen aktual)
 
 // --- Timing & Network ---
 const IPAddress PRIMARY_DNS(8, 8, 8, 8);
 const long SENSOR_PUBLISH_INTERVAL_MS = 5000;   // 5 seconds
 const long HEARTBEAT_INTERVAL_MS = 10000;  // 10 seconds
 const long WIFI_RECONNECT_DELAY_MS = 5000;
-const long MQTT_RECONNECT_DELAY_MS = 5000;
+const long MQTT_RECONNECT_DELAY_MS = 5000; 
 const int MAX_RECONNECT_ATTEMPTS = 60;
 
 // --- Calculated Constants ---

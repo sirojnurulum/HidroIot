@@ -2,8 +2,6 @@
 # We are replacing 'default_config:' with a minimal set of essential integrations
 # to keep the system lean and remove unused items like 'Media' or 'Sun'.
 
-# Core integrations for UI, automations, and helpers
-frontend:
 automation:
 script:
 input_boolean:
@@ -18,6 +16,8 @@ config:
 update:
 
 # Load frontend themes from the themes folder
+# The presence of this 'frontend' key is enough to load the integration.
+# We are also configuring it to load themes.
 frontend:
   themes: !include_dir_merge_named themes
 

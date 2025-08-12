@@ -23,19 +23,27 @@ Proyek ini adalah sistem otomatisasi untuk budidaya hidroponik menggunakan ESP32
 
 ## Fitur Utama
 
-*   **Pemantauan Level Air:** Menggunakan sensor ultrasonik untuk mengukur level air di tandon dan mengirimkannya ke Home Assistant.
-*   **Pemantauan Suhu Air:** Membaca suhu air menggunakan sensor DS18B20.
-*   **Pemantauan Suhu & Kelembaban Udara:** Menggunakan sensor DHT22 untuk memantau kondisi udara sekitar.
-*   **Pemantauan TDS:** Mengukur Total Dissolved Solids (konsentrasi nutrisi) di dalam air dengan kompensasi suhu.
-*   **Pemantauan pH:** Mengukur tingkat keasaman (pH) air menggunakan sensor analog PH-4502C.
-*   **Pemantauan Konsumsi Listrik:** Mengukur tegangan, arus, daya, dan energi menggunakan sensor PZEM-004T.
-*   **Kontrol Pompa Berbasis Volume:** Mengontrol 3 pompa peristaltik (Nutrisi A, Nutrisi B, dan pH) secara presisi berdasarkan volume (ml).
-*   **Kontrol Pompa Berbasis Durasi:** Mengontrol pompa penyiraman serbaguna berdasarkan durasi yang ditentukan dalam detik.
-*   **Notifikasi & Peringatan:** Sistem peringatan level air kritis dengan notifikasi MQTT dan buzzer.
-*   **Integrasi Home Assistant:** Semua data sensor dan kontrol pompa terintegrasi penuh dengan Home Assistant melalui protokol MQTT.
-*   **MQTT Heartbeat:** Mengirim sinyal "hidup" secara berkala ke Home Assistant untuk memverifikasi konektivitas ESP32.
-*   **Koneksi Ulang Otomatis:** Koneksi ulang Wi-Fi dan MQTT otomatis jika koneksi terputus.
-*   **Manajemen Kredensial Aman:** Memisahkan kredensial Wi-Fi dan MQTT dari kode utama menggunakan file `credentials.ini`.
+*   **Pemantauan Komprehensif:**
+    *   **Air:** Level (Ultrasonik), Suhu (DS18B20), TDS (dengan kompensasi suhu), dan pH (dengan kalibrasi 4-titik).
+    *   **Lingkungan:** Suhu & Kelembaban Udara (DHT22).
+    *   **Kelistrikan:** Tegangan, Arus, Daya, Energi, Frekuensi, dan Power Factor (PZEM-004T).
+*   **Kontrol Manual Presisi:**
+    *   **Dosis:** Kontrol pompa Nutrisi A, B, dan pH berdasarkan volume (ml).
+    *   **Penyiraman:** Kontrol pompa penyiraman berdasarkan durasi (detik).
+    *   **Pengisian Tandon:** Kontrol manual ON/OFF untuk katup pengisian.
+*   **Suite Automasi Penuh:**
+    *   **Auto-Dosing:** Menjaga level TDS dan pH secara otomatis berdasarkan target yang dapat diatur.
+    *   **Auto-Refill:** Mengisi ulang tandon secara otomatis saat level air rendah dan berhenti saat penuh.
+    *   **Penyiraman Cerdas:** Menjalankan penyiraman terjadwal (setiap jam) dan berdasarkan suhu udara yang tinggi.
+*   **Integrasi Home Assistant Tingkat Lanjut:**
+    *   Semua data sensor dan kontrol aktuator terintegrasi penuh melalui MQTT.
+    *   Dasbor kustom dengan 3 tab: Pemantauan, Kontrol Manual, dan Pengaturan.
+    *   Sinkronisasi dua arah antara status automasi di UI dan di perangkat ESP32.
+*   **Keandalan & Keamanan:**
+    *   Koneksi ulang Wi-Fi dan MQTT otomatis.
+    *   MQTT Last Will and Testament (LWT) untuk status online/offline yang akurat.
+    *   Peringatan level air kritis dengan buzzer dan notifikasi MQTT.
+    *   Manajemen kredensial aman menggunakan file `credentials.ini` yang terpisah.
 
 ## Daftar Komponen
 
@@ -112,6 +120,7 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 | 26               | PUMP_NUTRISI_B_PIN (Relay IN2)  | Kontrol Pompa Nutrisi B                         |
 | 27               | PUMP_PH_PIN (Relay IN3)         | Kontrol Pompa pH                                |
 | 33               | PUMP_SIRAM_PIN (Relay IN4)      | Kontrol Pompa Penyiraman                        |
+| 15               | PUMP_TANDON_PIN (Relay IN5)     | Kontrol Katup/Pompa Pengisian Tandon            |
 | GND              | Semua GND Komponen              | Common Ground Sistem                            |
 | 5V (atau VIN)    | Modul Relay DC+ & PZEM-004T     | Daya untuk Sirkuit Kontrol                      |
 | 3V3              | Modul pH & TDS VCC              | Daya untuk Modul Sensor Analog                  |
@@ -132,6 +141,7 @@ Berikut adalah koneksi pin detail antara ESP32, Sensor, Buzzer, Catu Daya, Pompa
 *   **Modul Relay `IN2`** --terhubung ke--> **ESP32 GPIO 26 (`PUMP_NUTRISI_B_PIN`)**.
 *   **Modul Relay `IN3`** --terhubung ke--> **ESP32 GPIO 27 (`PUMP_PH_PIN`)**.
 *   **Modul Relay `IN4`** --terhubung ke--> **ESP32 GPIO 33 (`PUMP_SIRAM_PIN`)**.
+*   **Modul Relay `IN5`** --terhubung ke--> **ESP32 GPIO 15 (`PUMP_TANDON_PIN`)**.
 
 **B. Sisi Beban (Catu Daya 12V ke Relay ke Pompa):**
 
@@ -160,10 +170,12 @@ Proyek ini dirancang untuk dikompilasi menggunakan **PlatformIO** di dalam Visua
     *   Isi file tersebut dengan kredensial Anda. File ini **tidak akan** diunggah ke Git.
         ```ini
         [credentials]
-        wifi_ssid = "SSID_WiFi_Anda"
-        wifi_password = "Password_WiFi_Anda"
-        mqtt_user = "Username_MQTT_Anda"
-        mqtt_pass = "Password_MQTT_Anda"
+        wifi_ssid = "Your_WiFi_SSID"
+        wifi_password = "Your_WiFi_Password"
+        mqtt_user = "Your_MQTT_Username"
+        mqtt_pass = "Your_MQTT_Password"
+        mqtt_server = "your_mqtt_broker_ip_or_domain"
+        mqtt_port = 1883
         ```
 
 4.  **Unggah Firmware:**
@@ -176,7 +188,7 @@ Proyek ini dirancang untuk dikompilasi menggunakan **PlatformIO** di dalam Visua
     *   Pastikan Anda telah menginstal dan mengkonfigurasi MQTT Broker (misalnya, Mosquitto Broker Add-on) di Home Assistant Anda.
 
 2.  **Konfigurasi Entitas di Home Assistant:**
-    *   Salin konten dari file-file di dalam direktori `src/ha_config/` proyek ini ke dalam direktori konfigurasi Home Assistant Anda.
+    *   Salin semua file dan direktori dari `src/ha_config/` proyek ini ke dalam direktori konfigurasi Home Assistant Anda. Pastikan struktur file dipertahankan.
     *   Atau, gunakan `Makefile` yang disediakan untuk men-deploy konfigurasi secara otomatis.
 
 ## Penggunaan
@@ -198,12 +210,13 @@ Setelah semua dirakit dan dikonfigurasi:
     *   **Periksa Pengaturan Jumper Relay:** Pastikan jumper `Low - Com - High` pada modul relay diatur ke posisi **`Com - High`**. Ini memastikan relay berfungsi sebagai "HIGH Level Trigger" sesuai dengan kode Anda.
     *   **Periksa Serial Monitor:** Saat Anda mengirim perintah, monitor serial ESP32 seharusnya mencetak pesan `[Pump Control] Pumping X ml...`. Jika tidak, berarti pesan MQTT tidak diterima atau tidak di-parse dengan benar.
 *   **Sensor tidak membaca data:**
-    *   Periksa kembali koneksi pin data sensor ke ESP32.
-    *   Pastikan library sensor yang relevan telah terinstal dengan benar oleh PlatformIO.
+    *   Periksa kembali semua koneksi kabel, terutama `VCC` dan `GND`.
+    *   Gunakan Serial Monitor untuk melihat pesan error spesifik dari sensor.
 *   **ESP32 tidak terhubung ke Wi-Fi/MQTT:**
     *   Periksa kembali kredensial Anda di file `credentials.ini`.
     *   Pastikan ESP32 berada dalam jangkauan Wi-Fi dan Broker MQTT Anda dapat diakses.
     *   Gunakan Serial Monitor di PlatformIO untuk melihat log koneksi secara detail.
+*   **Perubahan di UI tidak muncul:** Bersihkan cache browser Anda (Ctrl+F5 atau Cmd+Shift+R) dan restart Home Assistant setelah men-deploy perubahan konfigurasi YAML.
 
 ## Kontribusi
 

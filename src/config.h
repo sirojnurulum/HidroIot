@@ -61,14 +61,18 @@ extern const char *BASE_TOPIC;
 // =======================================================================
 //                       COMMON SYSTEM CONFIGURATION
 // =======================================================================
-/// @brief Primary DNS server to use for network lookups.
-extern const IPAddress PRIMARY_DNS;
 /// @brief The maximum height of the water reservoir in centimeters. Used to calculate water level from distance.
 extern const int TANDON_MAX_HEIGHT_CM;
+/// @brief Primary DNS server to use for network lookups.
+extern const IPAddress PRIMARY_DNS;
 /// @brief The interval (in milliseconds) at which sensor data is read and published.
 extern const long SENSOR_PUBLISH_INTERVAL_MS;
 /// @brief The interval (in milliseconds) at which a heartbeat message is sent to MQTT.
 extern const long HEARTBEAT_INTERVAL_MS;
+/// @brief The interval (in milliseconds) at which pump states are published to MQTT.
+extern const long ACTUATOR_STATE_PUBLISH_INTERVAL_MS;
+/// @brief The interval (in milliseconds) at which automation states are published to MQTT.
+extern const long AUTOMATION_STATE_PUBLISH_INTERVAL_MS;
 /// @brief The delay (in milliseconds) before attempting to reconnect to WiFi.
 extern const long WIFI_RECONNECT_DELAY_MS;
 /// @brief The delay (in milliseconds) before attempting to reconnect to the MQTT broker.
@@ -82,34 +86,28 @@ extern const float PUMP_MS_PER_ML;
 // =======================================================================
 //                INSTANCE-SPECIFIC PINS & CONFIGURATION
 // =======================================================================
-/// @brief GPIO pin for the ultrasonic sensor's trigger.
-extern const int ULTRASONIC_TRIGGER_PIN;
-/// @brief GPIO pin for the ultrasonic sensor's echo.
-extern const int ULTRASONIC_ECHO_PIN;
-/// @brief GPIO pin for the One-Wire bus (DS18B20 water temperature sensor).
-extern const int ONE_WIRE_BUS;
-/// @brief GPIO pin for the DHT22 air temperature and humidity sensor.
-extern const int DHT_PIN;
-/// @brief Analog GPIO pin for the TDS sensor.
-extern const int TDS_SENSOR_PIN;
-/// @brief GPIO pin for the alert buzzer.
-extern const int BUZZER_PIN;
-/// @brief GPIO pin connected to the relay for Nutrient Pump A.
-extern const int PUMP_NUTRISI_A_PIN;
-/// @brief GPIO pin connected to the relay for Nutrient Pump B.
-extern const int PUMP_NUTRISI_B_PIN;
-/// @brief GPIO pin connected to the relay for the pH dosing pump.
-extern const int PUMP_PH_PIN;
-/// @brief GPIO pin connected to the relay for the watering pump.
-extern const int PUMP_SIRAM_PIN;
-/// @brief GPIO pin connected to the relay for the reservoir refill valve/pump.
-extern const int PUMP_TANDON_PIN;
-/// @brief Analog GPIO pin for the pH sensor.
-extern const int PH_SENSOR_PIN;
-/// @brief GPIO pin for the PZEM-004T's TX, connected to the ESP32's RX2.
-extern const int PZEM_RX_PIN; // ESP32 RX2, connected to PZEM TX
-/// @brief GPIO pin for the PZEM-004T's RX, connected to the ESP32's TX2.
-extern const int PZEM_TX_PIN; // ESP32 TX2, connected to PZEM RX
+
+// --- Pin Definitions ---
+// These are defined here as `constexpr` to be available as compile-time constants
+// for use in switch-case statements and other contexts requiring constant expressions.
+
+// Sensor Pins
+constexpr int ULTRASONIC_TRIGGER_PIN = 5;  // JSN-SR04T Trig
+constexpr int ULTRASONIC_ECHO_PIN = 4;   // JSN-SR04T Echo
+constexpr int ONE_WIRE_BUS = 18;         // DS18B20 Data
+constexpr int DHT_PIN = 13;              // DHT22 Data
+constexpr int TDS_SENSOR_PIN = 34;       // TDS Sensor Analog Out
+constexpr int PH_SENSOR_PIN = 32;        // pH Sensor Analog Out (GPIO 32 - sesuai kalibrasi)
+constexpr int PZEM_RX_PIN = 16;          // ESP32 RX2, connects to PZEM TX
+constexpr int PZEM_TX_PIN = 17;          // ESP32 TX2, connects to PZEM RX
+
+// Actuator Pins
+constexpr int BUZZER_PIN = 19;           // Buzzer control
+constexpr int PUMP_NUTRISI_A_PIN = 25;   // Relay IN1
+constexpr int PUMP_NUTRISI_B_PIN = 26;   // Relay IN2
+constexpr int PUMP_PH_PIN = 27;          // Relay IN3
+constexpr int PUMP_SIRAM_PIN = 33;       // Relay IN4
+constexpr int PUMP_TANDON_PIN = 15;      // Relay IN5 (untuk katup solenoid/pompa pengisi)
 
 // SYSTEM CONFIG
 /// @brief The maximum distance (in cm) the ultrasonic sensor should measure.
@@ -122,13 +120,11 @@ extern const float WATER_LEVEL_CRITICAL_CM;
 extern const float TDS_K_VALUE;
 /// @brief The temperature coefficient for TDS compensation.
 extern const float TDS_TEMP_COEFF;
-// pH Sensor 4-Point Calibration Constants (Actual Experiment Data)
+// pH Sensor 4-Point Calibration Constants (from your calibration script).
 /// @brief The voltage reading from the pH sensor in pH 4.01 buffer solution.
-extern const float PH_CALIBRATION_VOLTAGE_401; 
+extern const float PH_CALIBRATION_VOLTAGE_401;
 /// @brief The voltage reading from the pH sensor in pH 6.86 buffer solution.
 extern const float PH_CALIBRATION_VOLTAGE_686;
-/// @brief The voltage reading from the pH sensor in pH 7.0 buffer solution.
-extern const float PH_CALIBRATION_VOLTAGE_7;
 /// @brief The voltage reading from the pH sensor in pH 9.18 buffer solution.
 extern const float PH_CALIBRATION_VOLTAGE_918;
 
@@ -195,5 +191,19 @@ extern const std::string STATE_TOPIC_PUMP_SIRAM;
 extern const std::string COMMAND_TOPIC_PUMP_TANDON;
 /// @brief MQTT topic for publishing the state of the reservoir refill valve/pump.
 extern const std::string STATE_TOPIC_PUMP_TANDON;
+
+// Automation Topics
+/// @brief MQTT topic for receiving auto-dosing pH & TDS enable/disable commands.
+extern const std::string COMMAND_TOPIC_AUTO_DOSING;
+/// @brief MQTT topic for publishing the current auto-dosing pH & TDS status.
+extern const std::string STATE_TOPIC_AUTO_DOSING;
+/// @brief MQTT topic for receiving auto-refill tandon enable/disable commands.
+extern const std::string COMMAND_TOPIC_AUTO_REFILL;
+/// @brief MQTT topic for publishing the current auto-refill tandon status.
+extern const std::string STATE_TOPIC_AUTO_REFILL;
+/// @brief MQTT topic for receiving penyiraman otomatis enable/disable commands.
+extern const std::string COMMAND_TOPIC_AUTO_IRRIGATION;
+/// @brief MQTT topic for publishing the current penyiraman otomatis status.
+extern const std::string STATE_TOPIC_AUTO_IRRIGATION;
 
 #endif // CONFIG_H

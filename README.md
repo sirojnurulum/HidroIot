@@ -23,19 +23,27 @@ This project is an automation system for hydroponic cultivation using an ESP32, 
 
 ## Main Features
 
-*   **Water Level Monitoring:** Uses an ultrasonic sensor to measure the water level in the reservoir and send it to Home Assistant.
-*   **Water Temperature Monitoring:** Reads water temperature using a DS18B20 sensor.
-*   **Air Temperature & Humidity Monitoring:** Uses a DHT22 sensor to monitor ambient air conditions.
-*   **TDS Monitoring:** Measures the Total Dissolved Solids (nutrient concentration) in the water with temperature compensation.
-*   **pH Monitoring:** Measures the water's pH level using a PH-4502C analog sensor.
-*   **Power Consumption Monitoring:** Measures voltage, current, power, and energy using a PZEM-004T sensor.
-*   **Volume-Based Pump Control:** Precisely controls 3 peristaltic pumps (Nutrient A, Nutrient B, and pH) by volume (ml).
-*   **Duration-Based Pump Control:** Controls a general-purpose watering pump based on a specified duration in seconds.
-*   **Notifications & Alerts:** Critical water level warning system with MQTT notifications and a buzzer.
-*   **Home Assistant Integration:** All sensor data and pump controls are fully integrated with Home Assistant via the MQTT protocol.
-*   **MQTT Heartbeat:** Sends periodic "alive" signals to Home Assistant to verify ESP32 connectivity.
-*   **Automatic Reconnection:** Automatic Wi-Fi and MQTT reconnection if connections are lost.
-*   **Secure Credential Management:** Separates Wi-Fi and MQTT credentials from the main code using a `credentials.ini` file.
+*   **Comprehensive Monitoring:**
+    *   **Water:** Level (Ultrasonic), Temperature (DS18B20), TDS (with temperature compensation), and pH (with 4-point calibration).
+    *   **Environment:** Air Temperature & Humidity (DHT22).
+    *   **Electrical:** Voltage, Current, Power, Energy, Frequency, and Power Factor (PZEM-004T).
+*   **Precise Manual Control:**
+    *   **Dosing:** Control Nutrient A, B, and pH pumps by volume (ml).
+    *   **Watering:** Control the watering pump by duration (seconds).
+    *   **Reservoir Refill:** Manual ON/OFF control for the refill valve.
+*   **Full Automation Suite:**
+    *   **Auto-Dosing:** Automatically maintains TDS and pH levels based on configurable targets.
+    *   **Auto-Refill:** Automatically refills the reservoir when the water level is low and stops when full.
+    *   **Smart Watering:** Performs scheduled (hourly) and temperature-based watering.
+*   **Advanced Home Assistant Integration:**
+    *   All sensor data and actuator controls are fully integrated via MQTT.
+    *   Custom dashboard with 3 tabs: Monitoring, Manual Controls, and Settings.
+    *   Two-way synchronization between automation statuses in the UI and on the ESP32 device.
+*   **Reliability & Security:**
+    *   Automatic Wi-Fi and MQTT reconnection.
+    *   MQTT Last Will and Testament (LWT) for accurate online/offline status.
+    *   Critical water level alerts with a buzzer and MQTT notifications.
+    *   Secure credential management using a separate `credentials.ini` file.
 
 ## Component List
 
@@ -112,6 +120,7 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 | 26               | PUMP_NUTRISI_B_PIN (Relay IN2)  | Nutrient Pump B Control                         |
 | 27               | PUMP_PH_PIN (Relay IN3)         | pH Pump Control                                 |
 | 33               | PUMP_SIRAM_PIN (Relay IN4)      | Watering Pump Control                           |
+| 15               | PUMP_TANDON_PIN (Relay IN5)     | Reservoir Refill Valve/Pump Control             |
 | GND              | All Component GNDs              | System Common Ground                            |
 | 5V (or VIN)      | Relay Module DC+ & PZEM-004T    | Power for Control Circuits                      |
 | 3V3              | pH & TDS Module VCC             | Power for Analog Sensor Modules                 |
@@ -132,6 +141,7 @@ Here are the detailed pin connections between the ESP32, Sensors, Buzzer, Power 
 *   **Relay Module `IN2`** --connects to--> **ESP32 GPIO 26 (`PUMP_NUTRISI_B_PIN`)**.
 *   **Relay Module `IN3`** --connects to--> **ESP32 GPIO 27 (`PUMP_PH_PIN`)**.
 *   **Relay Module `IN4`** --connects to--> **ESP32 GPIO 33 (`PUMP_SIRAM_PIN`)**.
+*   **Relay Module `IN5`** --connects to--> **ESP32 GPIO 15 (`PUMP_TANDON_PIN`)**.
 
 **B. Load Side (12V Power Supply to Relay to Pump):**
 
@@ -162,8 +172,10 @@ This project is designed to be compiled using **PlatformIO** within Visual Studi
         [credentials]
         wifi_ssid = "Your_WiFi_SSID"
         wifi_password = "Your_WiFi_Password"
-        mqtt_user = "Your_MQTT_Username"
-        mqtt_pass = "Your_MQTT_Password"
+        mqtt_user = "your_mqtt_username"
+        mqtt_pass = "your_mqtt_password"
+        mqtt_server = "your_mqtt_broker_ip_or_domain"
+        mqtt_port = 1883
         ```
 
 4.  **Upload Firmware:**
@@ -176,7 +188,7 @@ This project is designed to be compiled using **PlatformIO** within Visual Studi
     *   Ensure you have an MQTT Broker (e.g., Mosquitto Broker Add-on) installed and configured in your Home Assistant.
 
 2.  **Entity Configuration in Home Assistant:**
-    *   Copy the content from the files inside the `src/ha_config/` directory of this project into your Home Assistant configuration directory.
+    *   Copy all files and directories from the `src/ha_config/` directory of this project into your Home Assistant configuration directory, preserving the file structure.
     *   Alternatively, use the `Makefile` provided to deploy the configuration automatically.
 
 ## Usage
@@ -201,9 +213,10 @@ Once everything is assembled and configured:
     *   Double-check the data pin connections of the sensors to the ESP32.
     *   Ensure the relevant sensor libraries have been correctly installed by PlatformIO.
 *   **ESP32 not connecting to Wi-Fi/MQTT:**
+    *   Use the Serial Monitor in PlatformIO to view detailed connection logs.
     *   Double-check your credentials in the `credentials.ini` file.
     *   Ensure the ESP32 is within Wi-Fi range and your MQTT Broker is accessible.
-    *   Use the Serial Monitor in PlatformIO to view detailed connection logs.
+*   **UI changes not appearing:** Clear your browser cache (Ctrl+F5 or Cmd+Shift+R) and restart Home Assistant after deploying YAML configuration changes.
 
 ## Contribution
 

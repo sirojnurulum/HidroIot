@@ -188,15 +188,16 @@ static void read_pzem(SensorValues &values) {
 }
 
 /**
- * @brief Reads the pH sensor and calculates the pH value based on a four-point calibration.
- * Uses interpolation linear segmental for maximum accuracy across pH range.
+ * @brief Reads the pH sensor and calculates the pH value based on a 4-point calibration.
+ * Uses segmental linear interpolation for maximum accuracy across the pH range,
+ * based on the data from the dedicated calibration script.
  * @return The calculated pH value, or NAN on failure.
  */
 static float read_ph() {
   const float VREF = 3.3;
   const int ADC_RESOLUTION = 4095;
   
-  // Read ADC multiple times for averaging (reduce noise)
+  // Read ADC multiple times and take the average to reduce noise.
   int totalADC = 0;
   const int samples = 10;
   for(int i = 0; i < samples; i++) {
@@ -214,29 +215,26 @@ static float read_ph() {
     return NAN;
   }
 
-  // 4-Point Calibration using segmental linear interpolation
-  // Data points from actual calibration:
-  // pH 4.01 → 3.045V, pH 6.86 → 2.510V, pH 7.0 → 2.814V, pH 9.18 → 2.025V
+  // 4-Point Calibration using segmental linear interpolation, matching calibration script.
   float ph_value = 0.0;
-  
-  if (voltage >= PH_CALIBRATION_VOLTAGE_401) {
-    // Range asam ekstrem (pH < 4.01): extrapolasi dari pH 4.01 - pH 6.86
-    float slope_acid = (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686) / (4.01 - 6.86);
-    ph_value = 6.86 + ((voltage - PH_CALIBRATION_VOLTAGE_686) / slope_acid);
-  } else if (voltage >= PH_CALIBRATION_VOLTAGE_686) {
-    // Range asam-netral (pH 4.01 - 6.86): gunakan slope pH 4.01 - pH 6.86
-    float slope_acid_neutral = (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686) / (4.01 - 6.86);
-    ph_value = 6.86 + ((voltage - PH_CALIBRATION_VOLTAGE_686) / slope_acid_neutral);
-  } else if (voltage >= PH_CALIBRATION_VOLTAGE_918) {
-    // Range netral-basa (pH 6.86 - 9.18): gunakan slope pH 6.86 - pH 9.18
-    float slope_neutral_base = (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918) / (6.86 - 9.18);
-    ph_value = 9.18 + ((voltage - PH_CALIBRATION_VOLTAGE_918) / slope_neutral_base);
-  } else {
-    // Range basa (pH > 9.18): extrapolasi dari pH 6.86 - pH 9.18
-    float slope_base = (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918) / (6.86 - 9.18);
-    ph_value = 9.18 + ((voltage - PH_CALIBRATION_VOLTAGE_918) / slope_base);
+
+  if (voltage >= PH_CALIBRATION_VOLTAGE_401) { // Extrapolation for very acidic range (pH < 4.01)
+    float slope_acid = (4.01 - 6.86) / (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686);
+    ph_value = 6.86 + (voltage - PH_CALIBRATION_VOLTAGE_686) * slope_acid;
+  } else if (voltage >= PH_CALIBRATION_VOLTAGE_686) { // Acidic to neutral range (pH 4.01 to 6.86)
+    float slope_acid = (4.01 - 6.86) / (PH_CALIBRATION_VOLTAGE_401 - PH_CALIBRATION_VOLTAGE_686);
+    ph_value = 6.86 + (voltage - PH_CALIBRATION_VOLTAGE_686) * slope_acid;
+  } else if (voltage >= PH_CALIBRATION_VOLTAGE_918) { // Neutral to alkaline range (pH 6.86 to 9.18)
+    float slope_alkaline = (6.86 - 9.18) / (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918);
+    ph_value = 9.18 + (voltage - PH_CALIBRATION_VOLTAGE_918) * slope_alkaline;
+  } else { // Extrapolation for very alkaline range (pH > 9.18)
+    float slope_alkaline = (6.86 - 9.18) / (PH_CALIBRATION_VOLTAGE_686 - PH_CALIBRATION_VOLTAGE_918);
+    ph_value = 9.18 + (voltage - PH_CALIBRATION_VOLTAGE_918) * slope_alkaline;
   }
 
-  LOG_PRINTF("Voltage: %.2fV, pH: %.2f (4-point calibration)\n", voltage, ph_value);
+  // Clamp the result to a reasonable range (e.g., 0 to 14) to avoid extreme values from extrapolation.
+  ph_value = max(0.0f, min(14.0f, ph_value));
+
+  LOG_PRINTF("Voltage: %.3fV, pH: %.2f (4-point calibration)\n", voltage, ph_value);
   return ph_value;
 }

@@ -21,6 +21,10 @@ static SensorValues currentSensorValues;
 static unsigned long lastSensorPublishTime = 0;
 /// @brief Tracks the last time a heartbeat was sent to MQTT.
 static unsigned long lastHeartbeatTime = 0;
+/// @brief Tracks the last time actuator states were published to MQTT.
+static unsigned long lastActuatorStatePublishTime = 0;
+/// @brief Tracks the last time automation states were published to MQTT.
+static unsigned long lastAutomationStatePublishTime = 0;
 
 // --- Forward Declarations ---
 static void connectToWifi();
@@ -59,7 +63,7 @@ void loop() {
 
   // Run the loop functions for each module. These are non-blocking.
   mqtt_loop();
-  actuators_loop();
+  actuators_loop(currentSensorValues);
 
   // --- Timed Actions using a non-blocking approach ---
 
@@ -76,6 +80,18 @@ void loop() {
   if (currentTime - lastHeartbeatTime >= HEARTBEAT_INTERVAL_MS) {
     lastHeartbeatTime = currentTime;
     mqtt_publish_heartbeat();
+  }
+
+  // Periodically publish actuator states to keep Home Assistant synchronized.
+  if (currentTime - lastActuatorStatePublishTime >= ACTUATOR_STATE_PUBLISH_INTERVAL_MS) {
+    lastActuatorStatePublishTime = currentTime;
+    actuators_publish_states();
+  }
+
+  // Periodically publish automation states to keep Home Assistant synchronized.
+  if (currentTime - lastAutomationStatePublishTime >= AUTOMATION_STATE_PUBLISH_INTERVAL_MS) {
+    lastAutomationStatePublishTime = currentTime;
+    actuators_publish_automation_states();
   }
 }
 

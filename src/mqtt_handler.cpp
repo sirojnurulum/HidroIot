@@ -70,10 +70,11 @@ void mqtt_publish_sensor_data(const SensorValues &values) {
     // Helper lambda to publish a float value or "unavailable" if it's NAN.
     // This avoids code duplication and makes the logic cleaner.
     auto publish_float = [&](const std::string& topic, float value, const char* format) {
-        if (isnan(value)) {
-            mqtt_publish_state(topic, "unavailable", false);
-        } else {
-            // Use snprintf for buffer safety. It won't write past the buffer size.
+        // IMPORTANT: Only publish if the value is a valid number.
+        // If the value is NAN (Not-a-Number), we simply do not publish anything.
+        // This prevents sending non-numeric strings to topics expecting numbers,
+        // which resolves the ValueError in Home Assistant.
+        if (!isnan(value)) {
             snprintf(payloadBuffer, sizeof(payloadBuffer), format, value);
             mqtt_publish_state(topic, payloadBuffer, false);
         }
@@ -148,6 +149,11 @@ static void subscribe_to_topics() {
     mqttClient.subscribe(COMMAND_TOPIC_PUMP_SIRAM.c_str());
     mqttClient.subscribe(COMMAND_TOPIC_PUMP_TANDON.c_str());
     mqttClient.subscribe(COMMAND_TOPIC_SYSTEM_MODE.c_str());
+    
+    // Subscribe to automation topics
+    mqttClient.subscribe(COMMAND_TOPIC_AUTO_DOSING.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_AUTO_REFILL.c_str());
+    mqttClient.subscribe(COMMAND_TOPIC_AUTO_IRRIGATION.c_str());
 }
 
 /**
@@ -171,6 +177,11 @@ static void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     // Route the command to the correct handler in the actuators module.
     if (topic_str == COMMAND_TOPIC_SYSTEM_MODE) {
         actuators_handle_mode_command(messageBuffer);
+    } else if (topic_str == COMMAND_TOPIC_AUTO_DOSING || 
+               topic_str == COMMAND_TOPIC_AUTO_REFILL || 
+               topic_str == COMMAND_TOPIC_AUTO_IRRIGATION) {
+        // Handle automation commands
+        actuators_handle_automation_command(topic, messageBuffer);
     } else {
         // Assume any other subscribed topic is a pump command.
         // The actuator module will find the correct pump based on the topic.

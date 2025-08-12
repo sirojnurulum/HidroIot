@@ -165,17 +165,35 @@ views:
                       service_data:
                         entity_id: script.greenhouse_a_siram_tanaman
                     state:
-                      - value: 'on'
+                      - value: "on"
                         spin: true
                         color: var(--paper-item-icon-active-color)
+                  # --- Tombol Katup Tandon ---
+                  - type: custom:button-card
+                    entity: switch.greenhouse_a_katup_pengisian_tandon
+                    name: Isi Tandon Manual
+                    icon: mdi:valve
+                    # Memanggil skrip perantara. Ini adalah cara paling andal
+                    # untuk menjalankan logika toggle di backend.
+                    tap_action:
+                      action: call-service
+                      service: script.turn_on
+                      service_data:
+                        entity_id: script.greenhouse_a_toggle_tandon_valve
+                    state:
+                      - value: "on"
+                        spin: true
+                        icon: mdi:valve-open
+                        color: var(--paper-item-icon-active-color)
+                      - value: "off"
+                        icon: mdi:valve-closed
               - type: entities
                 title: Pengaturan Kontrol Manual
                 entities:
                   - entity: input_number.greenhouse_a_pompa_nutrisi_a_volume
                   - entity: input_number.greenhouse_a_pompa_nutrisi_b_volume
                   - entity: input_number.greenhouse_a_pompa_ph_volume
-                  - entity: input_number.greenhouse_a_pompa_siram_durasi
-                  - entity: switch.greenhouse_a_katup_pengisian_tandon
+                  - entity: input_number.greenhouse_a_pompa_siram_durasi_manual
 
   # ==================================
   # == View/Tab for System Settings
@@ -194,8 +212,8 @@ views:
             name: Aktifkan Penyiraman Terjadwal
           - entity: input_datetime.greenhouse_a_penyiraman_waktu_mulai
           - entity: input_datetime.greenhouse_a_penyiraman_waktu_selesai
-          - entity: input_number.greenhouse_a_pompa_siram_durasi
-            name: Durasi Penyiraman (detik)
+          - entity: input_number.greenhouse_a_pompa_siram_durasi # This is the automation duration
+            name: Durasi Penyiraman Otomatis (detik)
           - type: divider
           - type: section
             label: Automasi Dosis pH & TDS

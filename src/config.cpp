@@ -58,11 +58,13 @@ const int MAX_RECONNECT_ATTEMPTS = 60;
 
 // --- Calculated Constants & Calibration ---
 // ===================================================================
-// == PENTING: KALIBRASI POMPA WAJIB DILAKUKAN ==
+// == PENTING: KALIBRASI POMPA BARU - UPDATED SEPTEMBER 2025 ==
 // ===================================================================
-// Ganti nilai di bawah ini sesuai hasil kalibrasi pompa baru Anda.
-// Example: (13 sec/rev * 60 sec/min * 1000 ms/sec) / 200 ml/rev = 3900 ms/ml
-const float PUMP_MS_PER_ML = (13.0 * 60.0 * 1000.0) / 200.0;
+// Data kalibrasi pompa nutrisi yang telah diperbarui di lapangan:
+// - 100 ml dalam 3 detik = 33.33 ml/detik
+// - 1 liter dalam 30 detik = 33.33 ml/detik (verification)
+// - Kalkulasi: 3000 ms / 100 ml = 30 ms/ml
+const float PUMP_MS_PER_ML = 30.0;
 
 
 // =======================================================================
